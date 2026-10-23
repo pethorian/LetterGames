@@ -7,3 +7,10 @@ spring:
     admin:
       # Sem broker nos testes comuns; o teste com @EmbeddedKafka já cria o tópico.
       auto-create: false
+
+resilience4j:
+  retry:
+    instances:
+      catalogo:
+        # Só acelera os testes; as demais regras de retry/breaker são as de produção.
+        wait-duration: 10ms
