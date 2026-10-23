@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.CannotCreateTransactionException;
 
 import java.time.Instant;
 import java.util.List;
@@ -128,5 +129,15 @@ class EstatisticasControllerTest {
         mvc.perform(get("/usuarios/novato/conquistas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void bancoForaDoArDevolve503SemStackTrace() throws Exception {
+        when(estatisticas.findById("joao"))
+                .thenThrow(new CannotCreateTransactionException("Could not open JPA EntityManager"));
+
+        mvc.perform(get("/usuarios/joao/estatisticas"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.erro").value("BANCO_INDISPONIVEL"));
     }
 }
