@@ -2,6 +2,7 @@ package br.com.lettergames.estatisticas.consumo;
 
 import br.com.lettergames.contratos.Correlacao;
 import br.com.lettergames.contratos.evento.Topicos;
+import br.com.lettergames.estatisticas.infra.CorrelationIds;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
 import org.slf4j.MDC;
@@ -21,7 +22,8 @@ public final class CorrelacaoKafka {
 
     public static void colocarNoMdc(ConsumerRecord<?, ?> registro) {
         String correlationId = header(registro, Topicos.HEADER_CORRELATION_ID);
-        if (correlationId != null && !correlationId.isBlank()) {
+        // Header fora do padrão é descartado: o log fica sem correlationId, mas não com um valor forjado.
+        if (CorrelationIds.valido(correlationId)) {
             MDC.put(Correlacao.MDC_KEY, correlationId);
         } else {
             MDC.remove(Correlacao.MDC_KEY);
