@@ -20,14 +20,17 @@ public class RecuperadorDlt extends DeadLetterPublishingRecoverer {
 
     private static final Logger log = LoggerFactory.getLogger(RecuperadorDlt.class);
 
-    public RecuperadorDlt(KafkaOperations<?, ?> template) {
+    private final String grupo;
+
+    public RecuperadorDlt(KafkaOperations<?, ?> template, String grupo) {
         super(template, (registro, ex) -> new TopicPartition(Topicos.BACKLOG_EVENTOS_DLT, registro.partition()));
+        this.grupo = grupo;
     }
 
     @Override
     public void accept(ConsumerRecord<?, ?> registro, @Nullable Consumer<?, ?> consumer, Exception excecao) {
         CorrelacaoKafka.comCorrelacao(registro, () ->
-                log.error("☠ DLT {} ← offset={} partição={} motivo={}", Topicos.BACKLOG_EVENTOS_DLT,
+                log.error("☠ DLT {} ← group={} offset={} partição={} motivo={}", Topicos.BACKLOG_EVENTOS_DLT, grupo,
                         registro.offset(), registro.partition(), motivo(excecao)));
         super.accept(registro, consumer, excecao);
     }

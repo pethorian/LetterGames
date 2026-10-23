@@ -24,6 +24,9 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        # O backoff dorme entre polls: um intervalo (até 30s) precisa caber aqui com folga (validado no startup).
+        max.poll.interval.ms: 300000
     producer:
       # Usado só pela DLT: reenvia o value original (String) para inspeção.
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -36,9 +39,18 @@ spring:
 
 estatisticas:
   retry:
-    intervalo-inicial: 1s
-    multiplicador: 2
-    max-tentativas-extras: 3
+    # Banco/conexão/lock fora: segura a partição (ordem) em vez de pular o evento.
+    # 1s, 2s, 4s... até 30s por intervalo, por até 10 min no total; só então DLT.
+    transitoria:
+      intervalo-inicial: 1s
+      multiplicador: 2
+      intervalo-maximo: 30s
+      tempo-maximo: 10m
+    # Bug/regra: 1s, 2s, 4s (4 tentativas no total) e DLT.
+    processamento:
+      intervalo-inicial: 1s
+      multiplicador: 2
+      max-tentativas-extras: 3
 
 management:
   endpoints:

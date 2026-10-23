@@ -2,13 +2,18 @@ package br.com.lettergames.estatisticas.api;
 
 import br.com.lettergames.estatisticas.conquista.ConquistaRepository;
 import br.com.lettergames.estatisticas.estatistica.EstatisticasUsuarioRepository;
+import br.com.lettergames.estatisticas.infra.CorrelationIds;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Leitura das projeções. Usuário sem eventos ainda recebe zeros (não 404): é um estado válido. */
+/**
+ * Leitura das projeções. Usuário sem eventos ainda recebe zeros (não 404): é um estado válido.
+ * {@code usuarioId} fora de {@link CorrelationIds#REGEX} → 400 (validação de método nativa do Spring MVC).
+ */
 @RestController
 public class EstatisticasController {
 
@@ -21,14 +26,14 @@ public class EstatisticasController {
     }
 
     @GetMapping("/usuarios/{usuarioId}/estatisticas")
-    public EstatisticasResposta estatisticas(@PathVariable String usuarioId) {
+    public EstatisticasResposta estatisticas(@PathVariable @Pattern(regexp = CorrelationIds.REGEX) String usuarioId) {
         return estatisticas.findById(usuarioId)
                 .map(EstatisticasResposta::de)
                 .orElseGet(() -> EstatisticasResposta.vazia(usuarioId));
     }
 
     @GetMapping("/usuarios/{usuarioId}/conquistas")
-    public List<ConquistaResposta> conquistas(@PathVariable String usuarioId) {
+    public List<ConquistaResposta> conquistas(@PathVariable @Pattern(regexp = CorrelationIds.REGEX) String usuarioId) {
         return conquistas.findByIdUsuarioIdOrderByDesbloqueadaEmAscIdCodigoAsc(usuarioId).stream()
                 .map(ConquistaResposta::de)
                 .toList();

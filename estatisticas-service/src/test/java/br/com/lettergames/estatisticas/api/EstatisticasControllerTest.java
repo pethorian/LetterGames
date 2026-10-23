@@ -86,6 +86,26 @@ class EstatisticasControllerTest {
     }
 
     @Test
+    void correlationIdForaDoPadraoETrocadoPorUmNovo() throws Exception {
+        when(estatisticas.findById("joao")).thenReturn(Optional.empty());
+
+        for (String invalido : new String[] {"demo 01", "x".repeat(65), "demo\tforjado"}) {
+            mvc.perform(get("/usuarios/joao/estatisticas").header("X-Correlation-Id", invalido))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("X-Correlation-Id", hasLength(8)));
+        }
+        mvc.perform(get("/usuarios/joao/estatisticas").header("X-Correlation-Id", "a".repeat(64)))
+                .andExpect(header().string("X-Correlation-Id", "a".repeat(64)));
+    }
+
+    @Test
+    void usuarioIdForaDoPadraoRecebe400() throws Exception {
+        mvc.perform(get("/usuarios/{id}/estatisticas", "x".repeat(65))).andExpect(status().isBadRequest());
+        mvc.perform(get("/usuarios/{id}/estatisticas", "jo$ao")).andExpect(status().isBadRequest());
+        mvc.perform(get("/usuarios/{id}/conquistas", "jo ao")).andExpect(status().isBadRequest());
+    }
+
+    @Test
     void listaConquistasDesbloqueadas() throws Exception {
         var quando = Instant.parse("2026-10-24T14:03:11.123Z");
         when(conquistas.findByIdUsuarioIdOrderByDesbloqueadaEmAscIdCodigoAsc("joao")).thenReturn(List.of(
