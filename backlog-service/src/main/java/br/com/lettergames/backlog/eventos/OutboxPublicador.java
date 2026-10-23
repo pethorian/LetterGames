@@ -2,6 +2,7 @@ package br.com.lettergames.backlog.eventos;
 
 import br.com.lettergames.contratos.Correlacao;
 import br.com.lettergames.contratos.evento.Topicos;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.RetriableException;
@@ -12,11 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Limit;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -49,7 +52,8 @@ public class OutboxPublicador {
     static final int TAMANHO_LOTE = 50;
     /** Limita o trabalho de um ciclo; o que sobrar sai no próximo. */
     static final int MAX_RODADAS = 20;
-    private static final long TIMEOUT_ENVIO_SEGUNDOS = 5;
+    /** Folga sobre o delivery.timeout.ms: quem desiste primeiro é o producer, com o motivo real da falha. */
+    static final Duration FOLGA_ESPERA = Duration.ofSeconds(2);
 
     private static final Logger log = LoggerFactory.getLogger(OutboxPublicador.class);
 
@@ -57,6 +61,7 @@ public class OutboxPublicador {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final TransactionTemplate transacao;
     private final int maxTentativas;
+    private final Duration esperaEnvio;
 
     @Autowired
     public OutboxPublicador(EventoOutboxRepository repository, KafkaTemplate<String, String> kafkaTemplate,
@@ -66,6 +71,19 @@ public class OutboxPublicador {
         this.kafkaTemplate = kafkaTemplate;
         this.transacao = transacao;
         this.maxTentativas = maxTentativas;
+        this.esperaEnvio = esperaEnvio(kafkaTemplate);
+    }
+
+    /**
+     * Se o get desistisse antes do delivery.timeout.ms, o producer ainda poderia entregar depois: contaríamos
+     * falha de um evento publicado. Por isso a espera é delivery.timeout.ms (padrão do Kafka: 120 s) + folga.
+     */
+    static Duration esperaEnvio(KafkaTemplate<?, ?> kafkaTemplate) {
+        ProducerFactory<?, ?> fabrica = kafkaTemplate.getProducerFactory();
+        Object configurado = fabrica == null ? null
+                : fabrica.getConfigurationProperties().get(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG);
+        long deliveryMs = configurado == null ? 120_000 : Long.parseLong(configurado.toString());
+        return Duration.ofMillis(deliveryMs).plus(FOLGA_ESPERA);
     }
 
     /** @return quantos eventos foram publicados e marcados neste ciclo */
@@ -120,7 +138,7 @@ public class OutboxPublicador {
         try {
             RecordMetadata metadata;
             try {
-                metadata = envio.futuro().get(TIMEOUT_ENVIO_SEGUNDOS, TimeUnit.SECONDS).getRecordMetadata();
+                metadata = envio.futuro().get(esperaEnvio.toMillis(), TimeUnit.MILLISECONDS).getRecordMetadata();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 registrarFalha(evento, e, chavesBloqueadas);

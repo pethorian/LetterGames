@@ -26,9 +26,11 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
-        # Kafka fora não pode travar o publicador do outbox por minutos.
+        # Kafka fora não pode travar o publicador do outbox por minutos. O publicador espera o envio por
+        # delivery.timeout.ms + folga; o Kafka exige delivery.timeout.ms >= request.timeout.ms + linger.ms.
         max.block.ms: 5000
         request.timeout.ms: 5000
+        linger.ms: 0
         delivery.timeout.ms: 10000
 
 backlog:
