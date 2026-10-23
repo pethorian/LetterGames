@@ -8,9 +8,11 @@ Um **backlog de jogos**: o jogador cadastra jogos do catálogo no seu backlog (`
 
 ## Stack
 
-- Java 21, Spring Boot 3.3.x, Maven multi-módulo (usar **`./mvnw`**: o Maven não está instalado na máquina)
-- PostgreSQL 16 (**um container por serviço**), Redis 7, Apache Kafka 3.8 (KRaft, sem Zookeeper), Kafka UI
-- Spring Kafka, Spring Data JPA, Spring Cache, Resilience4j, Pact JVM
+- Java 21, Spring Boot 3.5.16, Maven multi-módulo (usar **`./mvnw`**: o Maven não está instalado na máquina)
+- PostgreSQL 16 (**um container por serviço**), Redis 7.4, Apache Kafka 3.9.1 (KRaft, sem Zookeeper), Kafka UI v0.7.2
+- Spring Kafka, Spring Data JPA + Flyway, Spring Cache, Resilience4j 2.4.0, Pact JVM 4.6.21
+- Pacote base `br.com.lettergames.<servico>`; contratos em `br.com.lettergames.contratos`
+- Configuração por ambiente via relaxed binding (`SPRING_DATASOURCE_URL`, `SPRING_KAFKA_BOOTSTRAP_SERVERS`, `SPRING_DATA_REDIS_HOST`, `CATALOGO_URL`). Os defaults em `application.yml` apontam para `localhost` com as portas do compose.
 - Testes: JUnit 5, H2, `spring-kafka-test` (EmbeddedKafka), Pact. **Sem Docker no perfil padrão.**
 
 ## Módulos

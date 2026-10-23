@@ -1,0 +1,27 @@
+name: Guarda de commits
+
+# Falha se um commit chegou em main/develop sem passar por PR.
+# (O plano gratuito não permite branch protection em repositório privado.)
+on:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  veio-de-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Commit está associado a um PR?
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for i in 1 2 3; do
+            n=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" --jq 'length')
+            [ "$n" -gt 0 ] && { echo "OK: commit veio de PR."; exit 0; }
+            sleep 5
+          done
+          echo "::error::Commit $GITHUB_SHA entrou em $GITHUB_REF_NAME sem PR. Use branch + PR (veja CONTRIBUTING.md)."
+          exit 1
