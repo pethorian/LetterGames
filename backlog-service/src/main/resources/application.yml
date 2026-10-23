@@ -35,6 +35,8 @@ backlog:
   outbox:
     publicador-habilitado: true
     intervalo: 500ms
+    # Falhas não transitórias até estacionar o evento (falhou_em); a chave fica bloqueada até reprocessar.
+    max-tentativas: 10
 
 catalogo:
   url: ${CATALOGO_URL:http://localhost:8081}
