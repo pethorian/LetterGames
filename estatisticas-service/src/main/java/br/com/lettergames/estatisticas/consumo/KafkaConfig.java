@@ -26,6 +26,7 @@ import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 public class KafkaConfig {
 
     public static final String FACTORY_ESTATISTICAS = "estatisticasContainerFactory";
+    public static final String FACTORY_CONQUISTAS = "conquistasContainerFactory";
 
     static final int PARTICOES = 3;
 
@@ -46,6 +47,13 @@ public class KafkaConfig {
             ConcurrentKafkaListenerContainerFactoryConfigurer configurer, ConsumerFactory<Object, Object> consumerFactory,
             KafkaTemplate<?, ?> template, PropriedadesRetry retry, ObjectMapper objectMapper) {
         return criarFactory(Consumidores.ESTATISTICAS, configurer, consumerFactory, template, retry, objectMapper);
+    }
+
+    @Bean(FACTORY_CONQUISTAS)
+    ConcurrentKafkaListenerContainerFactory<Object, Object> conquistasContainerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer, ConsumerFactory<Object, Object> consumerFactory,
+            KafkaTemplate<?, ?> template, PropriedadesRetry retry, ObjectMapper objectMapper) {
+        return criarFactory(Consumidores.CONQUISTAS, configurer, consumerFactory, template, retry, objectMapper);
     }
 
     private ConcurrentKafkaListenerContainerFactory<Object, Object> criarFactory(
