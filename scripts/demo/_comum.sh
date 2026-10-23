@@ -11,7 +11,9 @@ USUARIO="${USUARIO:-joao}"
 # No Git Bash do Windows, evita que /opt/... vire C:/Program Files/Git/opt/...
 export MSYS_NO_PATHCONV=1
 
-dc() { docker compose --project-directory "$RAIZ" "$@"; }
+# Caminho no formato do Windows quando rodando no Git Bash (docker.exe não entende /c/...).
+RAIZ_DOCKER="$(cd "$RAIZ" && (pwd -W 2>/dev/null || pwd))"
+dc() { docker compose -f "$RAIZ_DOCKER/docker-compose.yml" "$@"; }
 
 cena() { printf '\n\033[1;45;97m  %s  \033[0m\n' "$*"; }
 passo() { printf '\n\033[1;35m▶ %s\033[0m\n' "$*"; }
@@ -38,17 +40,18 @@ campo() {
 # Imprime o comando, o status HTTP, o tempo e o corpo formatado. O corpo cru fica em $ULTIMA_RESPOSTA.
 chamar() {
   local metodo=$1 url=$2 cid=$3 corpo=${4:-}
-  local args=(-s -o /tmp/lettergames-resp.$$ -w '%{http_code} %{time_total}' -X "$metodo" "$url"
+  local args=(-s -w '\n%{http_code} %{time_total}' -X "$metodo" "$url"
               -H "X-Correlation-Id: $cid" -H 'Accept: application/json')
   [ -n "$corpo" ] && args+=(-H 'Content-Type: application/json' -d "$corpo")
   printf '\033[1;36m$ %s %s\033[0m \033[33m[X-Correlation-Id: %s]\033[0m\n' "$metodo" "$url" "$cid"
   [ -n "$corpo" ] && info "corpo: $corpo"
-  local saida
-  saida=$(curl "${args[@]}" || echo "000 0")
-  ULTIMO_STATUS=${saida%% *}
-  local tempo=${saida##* }
-  ULTIMA_RESPOSTA=$(cat /tmp/lettergames-resp.$$ 2>/dev/null || true)
-  rm -f /tmp/lettergames-resp.$$
+  local saida ultima
+  saida=$(curl "${args[@]}" || printf '\n000 0')
+  ultima=${saida##*$'\n'}
+  ULTIMA_RESPOSTA=${saida%$'\n'*}
+  [ "$ULTIMA_RESPOSTA" = "$saida" ] && ULTIMA_RESPOSTA=""
+  ULTIMO_STATUS=${ultima%% *}
+  local tempo=${ultima##* }
   local cor=32; [ "${ULTIMO_STATUS:0:1}" = "4" ] && cor=33; [ "${ULTIMO_STATUS:0:1}" = "5" ] || [ "$ULTIMO_STATUS" = "000" ] && cor=31
   printf '\033[1;%sm  ← HTTP %s\033[0m \033[2m(%ss)\033[0m\n' "$cor" "$ULTIMO_STATUS" "$tempo"
   [ -n "$ULTIMA_RESPOSTA" ] && printf '%s' "$ULTIMA_RESPOSTA" | bonito | sed 's/^/    /'

@@ -20,4 +20,7 @@ dc start catalogo-service
 esperar_saudavel catalogo-service 8081
 info "aguardando a janela de 15 s do breaker aberto..."
 sleep 15
-chamar POST "$BACKLOG/usuarios/$USUARIO/backlog" demo-04-ok '{"jogoId":4}'
+info "HALF_OPEN libera 3 chamadas de teste; se derem certo, o breaker fecha (terminal 2: HALF_OPEN → CLOSED)"
+for jogo in 4 5 6; do
+  chamar POST "$BACKLOG/usuarios/$USUARIO/backlog" "demo-04-ok-$jogo" "{\"jogoId\":$jogo}"
+done
