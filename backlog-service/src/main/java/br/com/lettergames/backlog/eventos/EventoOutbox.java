@@ -17,7 +17,10 @@ import org.springframework.data.domain.Persistable;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Linha da tabela {@code outbox_eventos}: um {@code BacklogEvento} já serializado, pendente ou publicado. */
+/**
+ * Linha da tabela {@code outbox_eventos}: um {@code BacklogEvento} já serializado, pendente, publicado ou
+ * estacionado ({@code falhou_em}). Imutável na aplicação: o publicador muda o estado por UPDATE explícito.
+ */
 @Entity
 @Table(name = "outbox_eventos")
 public class EventoOutbox implements Persistable<UUID> {
@@ -52,6 +55,9 @@ public class EventoOutbox implements Persistable<UUID> {
     @Column(nullable = false)
     private int tentativas;
 
+    @Column(name = "falhou_em")
+    private Instant falhouEm;
+
     // Id é atribuído (eventId): sem isto o save() faria um SELECT antes de cada INSERT.
     @Transient
     private boolean novo = true;
@@ -68,14 +74,6 @@ public class EventoOutbox implements Persistable<UUID> {
         this.payload = payload;
         this.correlationId = correlationId;
         this.criadoEm = criadoEm;
-    }
-
-    public void marcarPublicado(Instant quando) {
-        this.publicadoEm = quando;
-    }
-
-    public int registrarFalha() {
-        return ++tentativas;
     }
 
     @PostLoad
@@ -128,5 +126,9 @@ public class EventoOutbox implements Persistable<UUID> {
 
     public int getTentativas() {
         return tentativas;
+    }
+
+    public Instant getFalhouEm() {
+        return falhouEm;
     }
 }

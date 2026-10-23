@@ -12,18 +12,21 @@ import br.com.lettergames.contratos.evento.StatusBacklog;
 import br.com.lettergames.contratos.evento.TipoEvento;
 import br.com.lettergames.contratos.evento.Topicos;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.IllegalTransactionStateException;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,6 +110,43 @@ class BacklogServiceTest {
 
         verify(catalogo, times(1)).buscarJogo(42L);
         assertThat(outboxRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void adicaoConcorrenteDoMesmoJogoViraConflitoPelaUnique() {
+        // Outra requisição grava o mesmo jogo enquanto esta consulta o catálogo (depois do exists).
+        when(catalogo.buscarJogo(42L)).thenAnswer(invocacao -> {
+            itens.saveAndFlush(ItemBacklog.novo("joao", 42L, "Hollow Knight", 27));
+            return HOLLOW_KNIGHT;
+        });
+
+        assertThatThrownBy(() -> service.adicionar("joao", 42L)).isInstanceOf(JogoJaNoBacklogException.class);
+
+        assertThat(itens.count()).isEqualTo(1);
+        assertThat(outboxRepository.count()).isZero();
+    }
+
+    @Test
+    void outraViolacaoDeIntegridadeNaoViraJogoJaNoBacklog() {
+        when(catalogo.buscarJogo(7L)).thenReturn(new JogoDTO(7L, "x".repeat(300), "PC", "Plataforma", 8));
+
+        assertThatThrownBy(() -> service.adicionar("joao", 7L))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .isNotInstanceOf(JogoJaNoBacklogException.class);
+        assertThat(itens.count()).isZero();
+    }
+
+    @Test
+    void reconheceAUniquePeloNomeExtraidoPeloHibernate() {
+        // Formato do Postgres: o nome vem limpo em getConstraintName(), sem aparecer na mensagem.
+        assertThat(BacklogService.violouUnicidadeUsuarioJogo(violacao("uk_itens_backlog_usuario_jogo"))).isTrue();
+        assertThat(BacklogService.violouUnicidadeUsuarioJogo(violacao("itens_backlog_pkey"))).isFalse();
+        assertThat(BacklogService.violouUnicidadeUsuarioJogo(violacao(null))).isFalse();
+    }
+
+    private static DataIntegrityViolationException violacao(String constraint) {
+        return new DataIntegrityViolationException("could not execute statement",
+                new ConstraintViolationException("duplicate key", new SQLException("erro"), constraint));
     }
 
     @Test

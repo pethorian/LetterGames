@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -47,6 +48,11 @@ public class ItemBacklog {
 
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
+
+    // Rede de segurança: se algum caminho alterar o item sem o lock pessimista, o commit falha (→ 409).
+    @Version
+    @Column(nullable = false)
+    private long versao;
 
     protected ItemBacklog() {
     }

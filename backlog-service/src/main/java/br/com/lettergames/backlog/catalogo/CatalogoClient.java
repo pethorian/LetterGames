@@ -1,5 +1,6 @@
 package br.com.lettergames.backlog.catalogo;
 
+import br.com.lettergames.backlog.infra.LogSeguro;
 import br.com.lettergames.contratos.Correlacao;
 import br.com.lettergames.contratos.catalogo.JogoDTO;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -77,6 +78,9 @@ public class CatalogoClient {
                         if (status.value() == 404) {
                             throw new JogoInexistenteNoCatalogoException(id);
                         }
+                        if (status.is4xxClientError()) {
+                            throw new CatalogoRequisicaoInvalidaException(status.value());
+                        }
                         if (!status.is2xxSuccessful()) {
                             throw new CatalogoIndisponivelException("catálogo respondeu " + status.value());
                         }
@@ -101,8 +105,9 @@ public class CatalogoClient {
 
     @SuppressWarnings("unused") // chamado pelo aspecto do CircuitBreaker
     private JogoDTO fallbackBuscarJogo(Long id, Throwable e) {
-        // 404 e indisponibilidade já chegam traduzidos; o Retry decide se repete.
-        if (e instanceof JogoInexistenteNoCatalogoException || e instanceof CatalogoIndisponivelException) {
+        // 404, outros 4xx e indisponibilidade já chegam traduzidos; o Retry decide se repete.
+        if (e instanceof JogoInexistenteNoCatalogoException || e instanceof CatalogoRequisicaoInvalidaException
+                || e instanceof CatalogoIndisponivelException) {
             throw (RuntimeException) e;
         }
         throw new CatalogoIndisponivelException("falha inesperada ao chamar o catálogo: " + motivo(e), e);
@@ -118,6 +123,6 @@ public class CatalogoClient {
             raiz = raiz.getCause();
         }
         String mensagem = raiz.getMessage();
-        return raiz.getClass().getSimpleName() + (mensagem != null ? ": " + mensagem : "");
+        return raiz.getClass().getSimpleName() + (mensagem != null ? ": " + LogSeguro.limpar(mensagem) : "");
     }
 }

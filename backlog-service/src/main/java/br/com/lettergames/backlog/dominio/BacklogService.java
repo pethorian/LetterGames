@@ -2,10 +2,12 @@ package br.com.lettergames.backlog.dominio;
 
 import br.com.lettergames.backlog.catalogo.CatalogoClient;
 import br.com.lettergames.backlog.eventos.OutboxRegistrador;
+import br.com.lettergames.backlog.infra.LogSeguro;
 import br.com.lettergames.contratos.catalogo.JogoDTO;
 import br.com.lettergames.contratos.evento.BacklogEvento;
 import br.com.lettergames.contratos.evento.StatusBacklog;
 import br.com.lettergames.contratos.evento.TipoEvento;
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Casos de uso do backlog. Toda alteração grava o item e o evento no outbox na mesma transação:
@@ -23,6 +26,9 @@ import java.util.List;
 public class BacklogService {
 
     private static final Logger log = LoggerFactory.getLogger(BacklogService.class);
+
+    /** Unique de V1__cria_itens_backlog.sql. */
+    static final String CONSTRAINT_USUARIO_JOGO = "uk_itens_backlog_usuario_jogo";
 
     private final ItemBacklogRepository repository;
     private final CatalogoClient catalogo;
@@ -56,30 +62,34 @@ public class BacklogService {
             });
         } catch (DataIntegrityViolationException e) {
             // Duas adições simultâneas do mesmo jogo: a unique (usuario_id, jogo_id) decide.
-            throw new JogoJaNoBacklogException(usuarioId, jogoId);
+            // Qualquer outra violação (coluna nula, valor grande demais) é bug e propaga.
+            if (violouUnicidadeUsuarioJogo(e)) {
+                throw new JogoJaNoBacklogException(usuarioId, jogoId);
+            }
+            throw e;
         }
         log.info("✚ ITEM salvo usuario={} jogo=\"{}\" status={} · evento JOGO_ADICIONADO no outbox",
-                usuarioId, item.getTitulo(), item.getStatus());
+                usuarioId, LogSeguro.limpar(item.getTitulo()), item.getStatus());
         return item;
     }
 
     @Transactional
     public ItemBacklog alterarStatus(String usuarioId, Long itemId, StatusBacklog novoStatus) {
-        ItemBacklog item = buscar(usuarioId, itemId);
+        ItemBacklog item = buscarParaAtualizar(usuarioId, itemId);
         StatusBacklog anterior = item.alterarStatus(novoStatus);
         outbox.registrar(evento(TipoEvento.STATUS_ALTERADO, item, anterior, novoStatus));
         log.info("✎ STATUS usuario={} jogo=\"{}\" {} → {} · evento STATUS_ALTERADO no outbox",
-                usuarioId, item.getTitulo(), anterior, novoStatus);
+                usuarioId, LogSeguro.limpar(item.getTitulo()), anterior, novoStatus);
         return item;
     }
 
     @Transactional
     public void remover(String usuarioId, Long itemId) {
-        ItemBacklog item = buscar(usuarioId, itemId);
+        ItemBacklog item = buscarParaAtualizar(usuarioId, itemId);
         repository.delete(item);
         outbox.registrar(evento(TipoEvento.JOGO_REMOVIDO, item, item.getStatus(), null));
         log.info("✖ ITEM removido usuario={} jogo=\"{}\" · evento JOGO_REMOVIDO no outbox",
-                usuarioId, item.getTitulo());
+                usuarioId, LogSeguro.limpar(item.getTitulo()));
     }
 
     @Transactional(readOnly = true)
@@ -89,9 +99,25 @@ public class BacklogService {
                 : repository.findByUsuarioIdAndStatusOrderByIdAsc(usuarioId, status);
     }
 
-    private ItemBacklog buscar(String usuarioId, Long itemId) {
-        return repository.findByIdAndUsuarioId(itemId, usuarioId)
+    // Com o lock, o evento (e o criado_em do outbox) só é montado depois do commit da transação anterior.
+    private ItemBacklog buscarParaAtualizar(String usuarioId, Long itemId) {
+        return repository.findByIdAndUsuarioIdParaAtualizar(itemId, usuarioId)
                 .orElseThrow(() -> new ItemNaoEncontradoException(usuarioId, itemId));
+    }
+
+    /** O Hibernate extrai o nome da constraint (Postgres e H2); a mensagem do driver é o plano B. */
+    static boolean violouUnicidadeUsuarioJogo(Throwable e) {
+        for (Throwable causa = e; causa != null && causa != causa.getCause(); causa = causa.getCause()) {
+            String nome = causa instanceof ConstraintViolationException violacao ? violacao.getConstraintName() : null;
+            if (contemConstraint(nome) || contemConstraint(causa.getMessage())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean contemConstraint(String texto) {
+        return texto != null && texto.toLowerCase(Locale.ROOT).contains(CONSTRAINT_USUARIO_JOGO);
     }
 
     private static BacklogEvento evento(TipoEvento tipo, ItemBacklog item, StatusBacklog anterior,

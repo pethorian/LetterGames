@@ -3,6 +3,7 @@ package br.com.lettergames.backlog.api;
 import br.com.lettergames.backlog.catalogo.CatalogoBreakerAbertoException;
 import br.com.lettergames.backlog.catalogo.CatalogoClient;
 import br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException;
+import br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException;
 import br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException;
 import br.com.lettergames.backlog.dominio.ItemBacklogRepository;
 import br.com.lettergames.backlog.eventos.EventoOutboxRepository;
@@ -14,7 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.http.MediaType;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -115,6 +118,17 @@ class BacklogControllerTest {
     }
 
     @Test
+    void catalogoRecusandoARequisicaoE502() throws Exception {
+        when(catalogo.buscarJogo(7L)).thenThrow(new CatalogoRequisicaoInvalidaException(400));
+
+        mvc.perform(post("/usuarios/joao/backlog").contentType(MediaType.APPLICATION_JSON).content("{\"jogoId\": 7}"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.erro").value("CATALOGO_REQUISICAO_INVALIDA"));
+
+        assertThat(itens.count()).isZero();
+    }
+
+    @Test
     void breakerAbertoTambemE503() throws Exception {
         when(catalogo.buscarJogo(7L)).thenThrow(new CatalogoBreakerAbertoException(null));
 
@@ -142,6 +156,38 @@ class BacklogControllerTest {
         mvc.perform(get("/usuarios/joao/backlog").param("status", "INVENTADO"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erro").value("VALIDACAO"));
+    }
+
+    @Test
+    void usuarioIdForaDoFormatoE400EmTodasAsRotas() throws Exception {
+        String quebraDeLinha = "/usuarios/jo%0Aao/backlog";
+        String longoDemais = "/usuarios/" + "a".repeat(65) + "/backlog";
+
+        mvc.perform(post(quebraDeLinha).contentType(MediaType.APPLICATION_JSON).content("{\"jogoId\": 42}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value("VALIDACAO"))
+                .andExpect(jsonPath("$.mensagem").value(startsWith("usuarioId: ")));
+        mvc.perform(post(longoDemais).contentType(MediaType.APPLICATION_JSON).content("{\"jogoId\": 42}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get(quebraDeLinha)).andExpect(status().isBadRequest());
+        mvc.perform(patch(quebraDeLinha + "/1").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\": \"JOGANDO\"}")).andExpect(status().isBadRequest());
+        mvc.perform(delete(quebraDeLinha + "/1")).andExpect(status().isBadRequest());
+
+        assertThat(itens.count()).isZero();
+    }
+
+    @Test
+    void conflitoDeLockVira409ConflitoConcorrente() {
+        TratadorDeErros tratador = new TratadorDeErros();
+
+        var otimista = tratador.conflitoConcorrente(new ObjectOptimisticLockingFailureException("ItemBacklog", 1L));
+        var pessimista = tratador.conflitoConcorrente(new CannotAcquireLockException("lock timeout"));
+
+        assertThat(otimista.getStatusCode().value()).isEqualTo(409);
+        assertThat(otimista.getBody().erro()).isEqualTo("CONFLITO_CONCORRENTE");
+        assertThat(pessimista.getStatusCode().value()).isEqualTo(409);
+        assertThat(pessimista.getBody().erro()).isEqualTo("CONFLITO_CONCORRENTE");
     }
 
     @Test

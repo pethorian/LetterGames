@@ -26,15 +26,19 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
-        # Kafka fora não pode travar o publicador do outbox por minutos.
+        # Kafka fora não pode travar o publicador do outbox por minutos. O publicador espera o envio por
+        # delivery.timeout.ms + folga; o Kafka exige delivery.timeout.ms >= request.timeout.ms + linger.ms.
         max.block.ms: 5000
         request.timeout.ms: 5000
+        linger.ms: 0
         delivery.timeout.ms: 10000
 
 backlog:
   outbox:
     publicador-habilitado: true
     intervalo: 500ms
+    # Falhas não transitórias até estacionar o evento (falhou_em); a chave fica bloqueada até reprocessar.
+    max-tentativas: 10
 
 catalogo:
   url: ${CATALOGO_URL:http://localhost:8081}
@@ -52,8 +56,10 @@ resilience4j:
         exponential-backoff-multiplier: 2
         retry-exceptions:
           - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        # Só IO, timeout e 5xx (CatalogoIndisponivelException) são repetidos.
         ignore-exceptions:
           - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          - br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException
           # Breaker aberto: repetir só atrasaria o 503 (o Retry envolve o CircuitBreaker).
           - br.com.lettergames.backlog.catalogo.CatalogoBreakerAbertoException
   circuitbreaker:
@@ -68,8 +74,10 @@ resilience4j:
         automatic-transition-from-open-to-half-open-enabled: true
         record-exceptions:
           - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        # Ignoradas nem contam como sucesso: 4xx não diz nada sobre a saúde do catálogo.
         ignore-exceptions:
           - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          - br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException
 
 management:
   endpoints:

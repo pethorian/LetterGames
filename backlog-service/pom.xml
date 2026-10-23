@@ -81,6 +81,12 @@
             <artifactId>junit5</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Provedor do pact de mensagens consumido pelo estatisticas-service. -->
+        <dependency>
+            <groupId>au.com.dius.pact.provider</groupId>
+            <artifactId>junit5spring</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
