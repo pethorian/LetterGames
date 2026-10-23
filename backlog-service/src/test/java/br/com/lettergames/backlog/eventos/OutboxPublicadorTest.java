@@ -203,6 +203,17 @@ class OutboxPublicadorTest {
         assertThat(repository.findById(evento).orElseThrow().getPublicadoEm()).isNotNull();
     }
 
+    @Test
+    void esperaPeloEnvioMaisQueODeliveryTimeoutDoProducer() {
+        Object delivery = kafkaTemplate.getProducerFactory().getConfigurationProperties()
+                .get(org.apache.kafka.clients.producer.ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG);
+
+        assertThat(delivery).hasToString("10000");
+        assertThat(OutboxPublicador.esperaEnvio(kafkaTemplate)).isGreaterThan(Duration.ofMillis(10_000));
+        assertThat(OutboxPublicador.esperaEnvio(mock(KafkaTemplate.class)))
+                .as("sem configuração, o padrão do Kafka (120 s)").isGreaterThan(Duration.ofSeconds(120));
+    }
+
     private UUID registrar(String usuario, TipoEvento tipo, StatusBacklog anterior, StatusBacklog novo,
                            String correlationId) {
         MDC.put(Correlacao.MDC_KEY, correlationId);
