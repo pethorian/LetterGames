@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.16</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>br.com.lettergames</groupId>
+    <artifactId>lettergames</artifactId>
+    <version>0.1.0-beta.1</version>
+    <packaging>pom</packaging>
+    <name>LetterGames — Backlog de Jogos</name>
+
+    <!--
+        Ordem importa: o backlog-service (consumidor) gera o pact em shared-contracts/pacts
+        antes de o catalogo-service (provedor) verificá-lo. Ver ADR-006.
+    -->
+    <modules>
+        <module>shared-contracts</module>
+        <module>backlog-service</module>
+        <module>catalogo-service</module>
+        <module>estatisticas-service</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <pact.version>4.6.21</pact.version>
+        <resilience4j.version>2.4.0</resilience4j.version>
+        <!-- Tags JUnit excluídas no perfil B (padrão): testes que exigem Docker. -->
+        <testes.excluidos>docker</testes.excluidos>
+        <pact.dir>${maven.multiModuleProjectDirectory}/shared-contracts/pacts</pact.dir>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>br.com.lettergames</groupId>
+                <artifactId>shared-contracts</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>au.com.dius.pact.consumer</groupId>
+                <artifactId>junit5</artifactId>
+                <version>${pact.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>au.com.dius.pact.provider</groupId>
+                <artifactId>junit5spring</artifactId>
+                <version>${pact.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <excludedGroups>${testes.excluidos}</excludedGroups>
+                        <systemPropertyVariables>
+                            <pact.rootDir>${pact.dir}</pact.rootDir>
+                            <pact.writer.overwrite>true</pact.writer.overwrite>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <!-- Perfil A: inclui testes marcados com @Tag("docker") (Testcontainers). -->
+        <profile>
+            <id>perfil-a</id>
+            <properties>
+                <testes.excluidos>nenhum</testes.excluidos>
+            </properties>
+        </profile>
+        <!-- Perfil B (padrão): pura JVM — H2, EmbeddedKafka, cache em memória. -->
+        <profile>
+            <id>perfil-b</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+        <!-- Perfil C (conceitual): só compila; a avaliação se apoia em docs/ e ADRs. -->
+        <profile>
+            <id>perfil-c</id>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </profile>
+    </profiles>
+</project>

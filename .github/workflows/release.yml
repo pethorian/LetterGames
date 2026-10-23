@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Criar tag e release a partir do VERSION
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          bash scripts/check-version.sh
+          versao=$(tr -d '[:space:]' < VERSION)
+          tag="v$versao"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag já existe; nada a fazer."
+            exit 0
+          fi
+          awk -v v="$versao" '
+            $0 ~ "^## \\[" v "\\]" { dentro=1; next }
+            dentro && /^## \[/ { exit }
+            dentro { print }
+          ' CHANGELOG.md > notas.md
+          [ -s notas.md ] || echo "Versão $versao" > notas.md
+          flags=""
+          case "$versao" in *-*) flags="--prerelease" ;; esac
+          gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --notes-file notas.md $flags
