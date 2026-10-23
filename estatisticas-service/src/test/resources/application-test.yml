@@ -9,6 +9,12 @@ spring:
     listener:
       concurrency: 1
 
+logging:
+  level:
+    org.apache.zookeeper: WARN
+    kafka: WARN
+    state.change.logger: WARN
+
 # Backoff curto para os testes de resiliência (50ms, 100ms, 200ms).
 estatisticas:
   retry:
