@@ -84,7 +84,7 @@ public class KafkaConfig {
     static DefaultErrorHandler errorHandler(String grupo, KafkaTemplate<?, ?> template, PropriedadesRetry retry,
                                             ObjectMapper objectMapper) {
         var logDeRetry = new LogDeRetry(grupo, objectMapper);
-        var handler = new DefaultErrorHandler(new RecuperadorDlt(template), backOffProcessamento(retry));
+        var handler = new DefaultErrorHandler(new RecuperadorDlt(template, grupo), backOffProcessamento(retry));
         // Avaliada na 1ª falha de cada registro (e de novo se o tipo da exceção mudar).
         handler.setBackOffFunction((registro, excecao) -> {
             ClasseFalha classe = ClassificadorFalhas.classificar(excecao);
