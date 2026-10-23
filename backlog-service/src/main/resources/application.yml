@@ -18,6 +18,41 @@ spring:
   flyway:
     enabled: true
 
+catalogo:
+  url: ${CATALOGO_URL:http://localhost:8081}
+  timeout:
+    conexao: 1s
+    leitura: 2s
+
+resilience4j:
+  retry:
+    instances:
+      catalogo:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        ignore-exceptions:
+          - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          # Breaker aberto: repetir só atrasaria o 503 (o Retry envolve o CircuitBreaker).
+          - br.com.lettergames.backlog.catalogo.CatalogoBreakerAbertoException
+  circuitbreaker:
+    instances:
+      catalogo:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        ignore-exceptions:
+          - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+
 management:
   endpoints:
     web:
