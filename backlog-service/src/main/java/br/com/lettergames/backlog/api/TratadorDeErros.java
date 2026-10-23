@@ -1,6 +1,7 @@
 package br.com.lettergames.backlog.api;
 
 import br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException;
+import br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException;
 import br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException;
 import br.com.lettergames.backlog.dominio.ItemNaoEncontradoException;
 import br.com.lettergames.backlog.dominio.JogoJaNoBacklogException;
@@ -38,6 +39,14 @@ public class TratadorDeErros {
     ResponseEntity<ErroResponse> catalogoIndisponivel(CatalogoIndisponivelException e) {
         log.warn("✘ 503 catálogo indisponível: {}", e.getMessage());
         return resposta(HttpStatus.SERVICE_UNAVAILABLE, "CATALOGO_INDISPONIVEL", MENSAGEM_CATALOGO_INDISPONIVEL);
+    }
+
+    // 502: o upstream recusou um pedido nosso; não é culpa do cliente (400) nem indisponibilidade (503).
+    @ExceptionHandler(CatalogoRequisicaoInvalidaException.class)
+    ResponseEntity<ErroResponse> catalogoRequisicaoInvalida(CatalogoRequisicaoInvalidaException e) {
+        log.error("✘ 502 catálogo recusou a requisição: {}", e.getMessage());
+        return resposta(HttpStatus.BAD_GATEWAY, "CATALOGO_REQUISICAO_INVALIDA",
+                "O catálogo recusou a consulta do jogo (" + e.getStatus() + "); o problema é nosso, não do pedido");
     }
 
     @ExceptionHandler(JogoJaNoBacklogException.class)

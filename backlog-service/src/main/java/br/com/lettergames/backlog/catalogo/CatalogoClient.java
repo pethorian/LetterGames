@@ -77,6 +77,9 @@ public class CatalogoClient {
                         if (status.value() == 404) {
                             throw new JogoInexistenteNoCatalogoException(id);
                         }
+                        if (status.is4xxClientError()) {
+                            throw new CatalogoRequisicaoInvalidaException(status.value());
+                        }
                         if (!status.is2xxSuccessful()) {
                             throw new CatalogoIndisponivelException("catálogo respondeu " + status.value());
                         }
@@ -101,8 +104,9 @@ public class CatalogoClient {
 
     @SuppressWarnings("unused") // chamado pelo aspecto do CircuitBreaker
     private JogoDTO fallbackBuscarJogo(Long id, Throwable e) {
-        // 404 e indisponibilidade já chegam traduzidos; o Retry decide se repete.
-        if (e instanceof JogoInexistenteNoCatalogoException || e instanceof CatalogoIndisponivelException) {
+        // 404, outros 4xx e indisponibilidade já chegam traduzidos; o Retry decide se repete.
+        if (e instanceof JogoInexistenteNoCatalogoException || e instanceof CatalogoRequisicaoInvalidaException
+                || e instanceof CatalogoIndisponivelException) {
             throw (RuntimeException) e;
         }
         throw new CatalogoIndisponivelException("falha inesperada ao chamar o catálogo: " + motivo(e), e);

@@ -52,8 +52,10 @@ resilience4j:
         exponential-backoff-multiplier: 2
         retry-exceptions:
           - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        # Só IO, timeout e 5xx (CatalogoIndisponivelException) são repetidos.
         ignore-exceptions:
           - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          - br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException
           # Breaker aberto: repetir só atrasaria o 503 (o Retry envolve o CircuitBreaker).
           - br.com.lettergames.backlog.catalogo.CatalogoBreakerAbertoException
   circuitbreaker:
@@ -68,8 +70,10 @@ resilience4j:
         automatic-transition-from-open-to-half-open-enabled: true
         record-exceptions:
           - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        # Ignoradas nem contam como sucesso: 4xx não diz nada sobre a saúde do catálogo.
         ignore-exceptions:
           - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          - br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException
 
 management:
   endpoints:
