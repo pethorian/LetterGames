@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class SegundoEvictDesligadoTest {
 
     private static final String CORPO = """
-            {"titulo":"Hollow Knight","plataforma":"PC","genero":"Metroidvania","duracaoMediaHoras":27}""";
+            {"titulo":"Jogo sem segundo evict","plataforma":"PC","genero":"Teste","duracaoMediaHoras":5}""";
 
     @Autowired
     MockMvc mvc;
@@ -33,12 +33,13 @@ class SegundoEvictDesligadoTest {
 
     @Test
     void semSegundoEvictOValorRegravadoPermanece() throws Exception {
+        long id = JogosDeTeste.criar(mvc, CORPO);
         Cache cache = cacheManager.getCache("jogos");
-        mvc.perform(put("/jogos/3").contentType(MediaType.APPLICATION_JSON).content(CORPO))
+        mvc.perform(put("/jogos/" + id).contentType(MediaType.APPLICATION_JSON).content(CORPO))
                 .andExpect(status().isOk());
-        cache.put(3L, "valor velho");
+        cache.put(id, "valor velho");
 
         await().during(Duration.ofMillis(800)).atMost(Duration.ofSeconds(3))
-                .untilAsserted(() -> assertThat(cache.get(3L)).isNotNull());
+                .untilAsserted(() -> assertThat(cache.get(id)).isNotNull());
     }
 }

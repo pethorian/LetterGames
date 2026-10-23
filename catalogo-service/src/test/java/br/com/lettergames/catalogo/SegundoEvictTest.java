@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class SegundoEvictTest {
 
     private static final String CORPO = """
-            {"titulo":"Hollow Knight","plataforma":"PC","genero":"Metroidvania","duracaoMediaHoras":27}""";
+            {"titulo":"Jogo do segundo evict","plataforma":"PC","genero":"Teste","duracaoMediaHoras":5}""";
 
     @Autowired
     MockMvc mvc;
@@ -37,16 +37,18 @@ class SegundoEvictTest {
 
     @Test
     void segundoEvictVarreOValorAntigoRegravadoDepoisDoPut() throws Exception {
+        // Jogo próprio: o H2 em memória é compartilhado entre contextos, então o seed não pode ser alterado.
+        long id = JogosDeTeste.criar(mvc, CORPO);
         Cache cache = cacheManager.getCache("jogos");
-        mvc.perform(get("/jogos/2")).andExpect(status().isOk());
-        mvc.perform(put("/jogos/2").contentType(MediaType.APPLICATION_JSON).content(CORPO))
+        mvc.perform(get("/jogos/" + id)).andExpect(status().isOk());
+        mvc.perform(put("/jogos/" + id).contentType(MediaType.APPLICATION_JSON).content(CORPO))
                 .andExpect(status().isOk());
-        assertThat(cache.get(2L)).isNull();
+        assertThat(cache.get(id)).isNull();
 
         // GET concorrente que leu antes do commit grava o valor velho depois do 1º evict.
-        cache.put(2L, "valor velho");
-        assertThat(cache.get(2L)).isNotNull();
+        cache.put(id, "valor velho");
+        assertThat(cache.get(id)).isNotNull();
 
-        await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> assertThat(cache.get(2L)).isNull());
+        await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> assertThat(cache.get(id)).isNull());
     }
 }
