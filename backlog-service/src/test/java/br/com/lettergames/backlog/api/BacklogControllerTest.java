@@ -3,6 +3,7 @@ package br.com.lettergames.backlog.api;
 import br.com.lettergames.backlog.catalogo.CatalogoBreakerAbertoException;
 import br.com.lettergames.backlog.catalogo.CatalogoClient;
 import br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException;
+import br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException;
 import br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException;
 import br.com.lettergames.backlog.dominio.ItemBacklogRepository;
 import br.com.lettergames.backlog.eventos.EventoOutboxRepository;
@@ -112,6 +113,17 @@ class BacklogControllerTest {
 
         assertThat(itens.count()).isZero();
         assertThat(outbox.count()).isZero();
+    }
+
+    @Test
+    void catalogoRecusandoARequisicaoE502() throws Exception {
+        when(catalogo.buscarJogo(7L)).thenThrow(new CatalogoRequisicaoInvalidaException(400));
+
+        mvc.perform(post("/usuarios/joao/backlog").contentType(MediaType.APPLICATION_JSON).content("{\"jogoId\": 7}"))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.erro").value("CATALOGO_REQUISICAO_INVALIDA"));
+
+        assertThat(itens.count()).isZero();
     }
 
     @Test
