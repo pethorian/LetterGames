@@ -4,6 +4,8 @@ import br.com.lettergames.contratos.catalogo.JogoDTO;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,8 +27,11 @@ public class JogoService {
         return jogo.paraDto();
     }
 
+    // Cache-aside: o corpo só executa no MISS. Criar não popula o cache (a 1ª leitura popula).
+    @Cacheable(cacheNames = "jogos", key = "#id")
     @Transactional(readOnly = true)
     public JogoDTO buscar(Long id) {
+        log.info("✘ CACHE MISS jogos::{} → consultando postgres-catalogo", id);
         return repositorio.findById(id).orElseThrow(() -> new JogoNaoEncontradoException(id)).paraDto();
     }
 
@@ -39,6 +44,8 @@ public class JogoService {
         return jogos.stream().map(Jogo::paraDto).toList();
     }
 
+    // Evict (e não @CachePut): duas escritas concorrentes poderiam deixar a versão antiga no cache (ADR-004).
+    @CacheEvict(cacheNames = "jogos", key = "#id")
     @Transactional
     public JogoDTO atualizar(Long id, String titulo, String plataforma, String genero, Integer duracaoMediaHoras) {
         Jogo jogo = repositorio.findById(id).orElseThrow(() -> new JogoNaoEncontradoException(id));
@@ -46,6 +53,7 @@ public class JogoService {
         return repositorio.save(jogo).paraDto();
     }
 
+    @CacheEvict(cacheNames = "jogos", key = "#id")
     @Transactional
     public void remover(Long id) {
         if (!repositorio.existsById(id)) {
