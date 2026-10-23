@@ -4,7 +4,7 @@ import br.com.lettergames.backlog.dominio.BacklogService;
 import br.com.lettergames.backlog.dominio.ItemBacklog;
 import br.com.lettergames.contratos.evento.StatusBacklog;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +24,9 @@ import java.util.List;
 @RequestMapping("/usuarios/{usuarioId}/backlog")
 public class BacklogController {
 
+    // Mesmo formato aceito no X-Correlation-Id: vai para logs e para a chave Kafka, então nada de controle.
+    static final String USUARIO_ID = "[A-Za-z0-9._-]{1,64}";
+
     private final BacklogService service;
 
     public BacklogController(BacklogService service) {
@@ -31,8 +34,9 @@ public class BacklogController {
     }
 
     @PostMapping
-    public ResponseEntity<ItemBacklogResponse> adicionar(@PathVariable @Size(max = 100) String usuarioId,
-                                                         @RequestBody @Valid AdicionarItemRequest request) {
+    public ResponseEntity<ItemBacklogResponse> adicionar(
+            @PathVariable @Pattern(regexp = USUARIO_ID) String usuarioId,
+            @RequestBody @Valid AdicionarItemRequest request) {
         ItemBacklog item = service.adicionar(usuarioId, request.jogoId());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{itemId}").buildAndExpand(item.getId()).toUri();
@@ -40,19 +44,21 @@ public class BacklogController {
     }
 
     @PatchMapping("/{itemId}")
-    public ItemBacklogResponse alterarStatus(@PathVariable String usuarioId, @PathVariable Long itemId,
+    public ItemBacklogResponse alterarStatus(@PathVariable @Pattern(regexp = USUARIO_ID) String usuarioId,
+                                             @PathVariable Long itemId,
                                              @RequestBody @Valid AlterarStatusRequest request) {
         return ItemBacklogResponse.de(service.alterarStatus(usuarioId, itemId, request.status()));
     }
 
     @GetMapping
-    public List<ItemBacklogResponse> listar(@PathVariable String usuarioId,
+    public List<ItemBacklogResponse> listar(@PathVariable @Pattern(regexp = USUARIO_ID) String usuarioId,
                                             @RequestParam(required = false) StatusBacklog status) {
         return service.listar(usuarioId, status).stream().map(ItemBacklogResponse::de).toList();
     }
 
     @DeleteMapping("/{itemId}")
-    public ResponseEntity<Void> remover(@PathVariable String usuarioId, @PathVariable Long itemId) {
+    public ResponseEntity<Void> remover(@PathVariable @Pattern(regexp = USUARIO_ID) String usuarioId,
+                                        @PathVariable Long itemId) {
         service.remover(usuarioId, itemId);
         return ResponseEntity.noContent().build();
     }

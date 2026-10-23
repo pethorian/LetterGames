@@ -1,5 +1,6 @@
 package br.com.lettergames.backlog.catalogo;
 
+import br.com.lettergames.backlog.infra.LogSeguro;
 import br.com.lettergames.contratos.Correlacao;
 import br.com.lettergames.contratos.catalogo.JogoDTO;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -122,6 +123,6 @@ public class CatalogoClient {
             raiz = raiz.getCause();
         }
         String mensagem = raiz.getMessage();
-        return raiz.getClass().getSimpleName() + (mensagem != null ? ": " + mensagem : "");
+        return raiz.getClass().getSimpleName() + (mensagem != null ? ": " + LogSeguro.limpar(mensagem) : "");
     }
 }

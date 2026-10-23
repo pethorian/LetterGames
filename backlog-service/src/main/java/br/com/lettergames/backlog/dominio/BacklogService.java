@@ -2,6 +2,7 @@ package br.com.lettergames.backlog.dominio;
 
 import br.com.lettergames.backlog.catalogo.CatalogoClient;
 import br.com.lettergames.backlog.eventos.OutboxRegistrador;
+import br.com.lettergames.backlog.infra.LogSeguro;
 import br.com.lettergames.contratos.catalogo.JogoDTO;
 import br.com.lettergames.contratos.evento.BacklogEvento;
 import br.com.lettergames.contratos.evento.StatusBacklog;
@@ -68,7 +69,7 @@ public class BacklogService {
             throw e;
         }
         log.info("✚ ITEM salvo usuario={} jogo=\"{}\" status={} · evento JOGO_ADICIONADO no outbox",
-                usuarioId, item.getTitulo(), item.getStatus());
+                usuarioId, LogSeguro.limpar(item.getTitulo()), item.getStatus());
         return item;
     }
 
@@ -78,7 +79,7 @@ public class BacklogService {
         StatusBacklog anterior = item.alterarStatus(novoStatus);
         outbox.registrar(evento(TipoEvento.STATUS_ALTERADO, item, anterior, novoStatus));
         log.info("✎ STATUS usuario={} jogo=\"{}\" {} → {} · evento STATUS_ALTERADO no outbox",
-                usuarioId, item.getTitulo(), anterior, novoStatus);
+                usuarioId, LogSeguro.limpar(item.getTitulo()), anterior, novoStatus);
         return item;
     }
 
@@ -88,7 +89,7 @@ public class BacklogService {
         repository.delete(item);
         outbox.registrar(evento(TipoEvento.JOGO_REMOVIDO, item, item.getStatus(), null));
         log.info("✖ ITEM removido usuario={} jogo=\"{}\" · evento JOGO_REMOVIDO no outbox",
-                usuarioId, item.getTitulo());
+                usuarioId, LogSeguro.limpar(item.getTitulo()));
     }
 
     @Transactional(readOnly = true)
