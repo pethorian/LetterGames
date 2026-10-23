@@ -65,7 +65,7 @@ public class BacklogService {
 
     @Transactional
     public ItemBacklog alterarStatus(String usuarioId, Long itemId, StatusBacklog novoStatus) {
-        ItemBacklog item = buscar(usuarioId, itemId);
+        ItemBacklog item = buscarParaAtualizar(usuarioId, itemId);
         StatusBacklog anterior = item.alterarStatus(novoStatus);
         outbox.registrar(evento(TipoEvento.STATUS_ALTERADO, item, anterior, novoStatus));
         log.info("✎ STATUS usuario={} jogo=\"{}\" {} → {} · evento STATUS_ALTERADO no outbox",
@@ -75,7 +75,7 @@ public class BacklogService {
 
     @Transactional
     public void remover(String usuarioId, Long itemId) {
-        ItemBacklog item = buscar(usuarioId, itemId);
+        ItemBacklog item = buscarParaAtualizar(usuarioId, itemId);
         repository.delete(item);
         outbox.registrar(evento(TipoEvento.JOGO_REMOVIDO, item, item.getStatus(), null));
         log.info("✖ ITEM removido usuario={} jogo=\"{}\" · evento JOGO_REMOVIDO no outbox",
@@ -89,8 +89,9 @@ public class BacklogService {
                 : repository.findByUsuarioIdAndStatusOrderByIdAsc(usuarioId, status);
     }
 
-    private ItemBacklog buscar(String usuarioId, Long itemId) {
-        return repository.findByIdAndUsuarioId(itemId, usuarioId)
+    // Com o lock, o evento (e o criado_em do outbox) só é montado depois do commit da transação anterior.
+    private ItemBacklog buscarParaAtualizar(String usuarioId, Long itemId) {
+        return repository.findByIdAndUsuarioIdParaAtualizar(itemId, usuarioId)
                 .orElseThrow(() -> new ItemNaoEncontradoException(usuarioId, itemId));
     }
 
