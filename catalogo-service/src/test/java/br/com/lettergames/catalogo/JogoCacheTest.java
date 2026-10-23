@@ -108,6 +108,15 @@ class JogoCacheTest {
     }
 
     @Test
+    void notFoundNaoEhCacheado() throws Exception {
+        mvc.perform(get("/jogos/999")).andExpect(status().isNotFound());
+        mvc.perform(get("/jogos/999")).andExpect(status().isNotFound());
+
+        verify(repositorio, times(2)).findById(999L);
+        assertThat(cacheManager.getCache("jogos").get(999L)).isNull();
+    }
+
+    @Test
     void listagemNaoEhCacheada() throws Exception {
         mvc.perform(get("/jogos").param("plataforma", "PC")).andExpect(status().isOk());
         mvc.perform(get("/jogos").param("plataforma", "PC")).andExpect(status().isOk());

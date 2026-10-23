@@ -15,9 +15,17 @@ logging:
     kafka: WARN
     state.change.logger: WARN
 
-# Backoff curto para os testes de resiliência (50ms, 100ms, 200ms).
+# Backoff curto para os testes de resiliência.
 estatisticas:
   retry:
-    intervalo-inicial: 50ms
-    multiplicador: 2
-    max-tentativas-extras: 3
+    # 50ms, 100ms, 200ms, 200ms... por até 10s.
+    transitoria:
+      intervalo-inicial: 50ms
+      multiplicador: 2
+      intervalo-maximo: 200ms
+      tempo-maximo: 10s
+    # 50ms, 100ms, 200ms → 4 tentativas.
+    processamento:
+      intervalo-inicial: 50ms
+      multiplicador: 2
+      max-tentativas-extras: 3

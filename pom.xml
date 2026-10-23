@@ -18,14 +18,15 @@
     <name>LetterGames — Backlog de Jogos</name>
 
     <!--
-        Ordem importa: o backlog-service (consumidor) gera o pact em shared-contracts/pacts
-        antes de o catalogo-service (provedor) verificá-lo. Ver ADR-006.
+        Ordem importa (ADR-006): cada consumidor gera o pact em shared-contracts/pacts antes de o provedor verificá-lo.
+        1. estatisticas-service (consumidor) gera o pact de mensagem que o backlog-service (provedor) verifica;
+        2. backlog-service (consumidor) gera o pact REST que o catalogo-service (provedor) verifica.
     -->
     <modules>
         <module>shared-contracts</module>
+        <module>estatisticas-service</module>
         <module>backlog-service</module>
         <module>catalogo-service</module>
-        <module>estatisticas-service</module>
     </modules>
 
     <properties>

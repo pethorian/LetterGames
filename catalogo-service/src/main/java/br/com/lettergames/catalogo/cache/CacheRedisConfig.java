@@ -28,12 +28,13 @@ public class CacheRedisConfig {
     }
 
     @Bean
-    CacheManager cacheManager(RedisConnectionFactory conexao, @Value("${catalogo.cache.ttl}") Duration ttl) {
+    CacheManager cacheManager(RedisConnectionFactory conexao, @Value("${catalogo.cache.ttl}") Duration ttl,
+            @Value("${catalogo.cache.segundo-evict:500ms}") Duration segundoEvict) {
         RedisCacheManager redis = RedisCacheManager.builder(conexao)
                 .cacheDefaults(configuracao(ttl))
                 .build();
         // Não é um bean, então o Spring não chama o afterPropertiesSet por nós.
         redis.afterPropertiesSet();
-        return new CacheManagerComLog(redis);
+        return new CacheManagerComLog(redis, segundoEvict);
     }
 }

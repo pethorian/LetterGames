@@ -12,9 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.UUID;
 
-/** Lê (ou gera) o {@code X-Correlation-Id}, põe no MDC e devolve no header da resposta. */
+/** Lê (ou gera, se ausente ou inválido) o {@code X-Correlation-Id}, põe no MDC e devolve no header da resposta. */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorrelationIdFilter extends OncePerRequestFilter {
@@ -23,8 +22,9 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String correlationId = request.getHeader(Correlacao.HEADER_HTTP);
-        if (correlationId == null || correlationId.isBlank()) {
-            correlationId = UUID.randomUUID().toString().substring(0, 8);
+        // Fora do padrão (vazio, longo, com espaço ou quebra de linha): descarta e gera um novo.
+        if (!CorrelationIds.valido(correlationId)) {
+            correlationId = CorrelationIds.novo();
         }
         MDC.put(Correlacao.MDC_KEY, correlationId);
         response.setHeader(Correlacao.HEADER_HTTP, correlationId);
