@@ -1,0 +1,55 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: estatisticas-service
+  datasource:
+    url: jdbc:postgresql://localhost:5435/estatisticas
+    username: lettergames
+    password: lettergames
+    hikari:
+      # Banco fora aparece rápido como falha transitória e entra no retry do consumidor.
+      connection-timeout: 2000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      # Usado só pela DLT: reenvia o value original (String) para inspeção.
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    listener:
+      # Offset só é commitado depois que o listener retorna (após o commit no banco).
+      ack-mode: record
+      concurrency: 3
+
+estatisticas:
+  retry:
+    intervalo-inicial: 1s
+    multiplicador: 2
+    max-tentativas-extras: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.hibernate: WARN
+    com.zaxxer: WARN
+    org.flywaydb: WARN
+    org.springframework.kafka: WARN
