@@ -3,9 +3,9 @@
 set -euo pipefail
 
 RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-CATALOGO="${CATALOGO_URL:-http://localhost:8081}"
-BACKLOG="${BACKLOG_URL:-http://localhost:8082}"
-ESTATISTICAS="${ESTATISTICAS_URL:-http://localhost:8083}"
+CATALOGO="${CATALOGO_URL:-http://127.0.0.1:8081}"
+BACKLOG="${BACKLOG_URL:-http://127.0.0.1:8082}"
+ESTATISTICAS="${ESTATISTICAS_URL:-http://127.0.0.1:8083}"
 USUARIO="${USUARIO:-joao}"
 
 # No Git Bash do Windows, evita que /opt/... vire C:/Program Files/Git/opt/...
@@ -79,7 +79,7 @@ esperar_saudavel() {
   local servico=$1 porta=$2
   info "aguardando $servico ficar saudável..."
   for _ in $(seq 1 60); do
-    curl -sf "http://localhost:$porta/actuator/health" >/dev/null 2>&1 && { info "$servico UP"; return 0; }
+    curl -sf "http://127.0.0.1:$porta/actuator/health" >/dev/null 2>&1 && { info "$servico UP"; return 0; }
     sleep 2
   done
   echo "  $servico não subiu a tempo" >&2
