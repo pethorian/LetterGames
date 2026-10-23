@@ -136,4 +136,53 @@ class JogoControllerTest {
         mvc.perform(get("/jogos/1").header(Correlacao.HEADER_HTTP, "demo-02"))
                 .andExpect(header().string(Correlacao.HEADER_HTTP, "demo-02"));
     }
+
+    @Test
+    void correlationIdInvalidoEhSubstituidoPorUmNovo() throws Exception {
+        for (String invalido : new String[] {"abc\nINFO falso", "com espaco", "<script>", "x".repeat(65)}) {
+            mvc.perform(get("/jogos/1").header(Correlacao.HEADER_HTTP, invalido))
+                    .andExpect(header().string(Correlacao.HEADER_HTTP,
+                            org.hamcrest.Matchers.matchesPattern("[0-9a-f]{8}")));
+        }
+        mvc.perform(get("/jogos/1").header(Correlacao.HEADER_HTTP, "x".repeat(64)))
+                .andExpect(header().string(Correlacao.HEADER_HTTP, "x".repeat(64)));
+    }
+
+    @Test
+    void stringsLongasDevolvem400EmVezDe500() throws Exception {
+        String titulo201 = """
+                {"titulo":"%s","plataforma":"PC","genero":"RPG","duracaoMediaHoras":30}""".formatted("t".repeat(201));
+        String plataforma51 = """
+                {"titulo":"X","plataforma":"%s","genero":"RPG","duracaoMediaHoras":30}""".formatted("p".repeat(51));
+        String genero51 = """
+                {"titulo":"X","plataforma":"PC","genero":"%s","duracaoMediaHoras":30}""".formatted("g".repeat(51));
+        for (String corpo : new String[] {titulo201, plataforma51, genero51}) {
+            mvc.perform(post("/jogos").contentType(MediaType.APPLICATION_JSON).content(corpo))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.erro", is("VALIDACAO")));
+        }
+        String noLimite = """
+                {"titulo":"%s","plataforma":"%s","genero":"%s","duracaoMediaHoras":30}"""
+                .formatted("t".repeat(200), "p".repeat(50), "g".repeat(50));
+        mvc.perform(post("/jogos").contentType(MediaType.APPLICATION_JSON).content(noLimite))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void caracteresDeControleDevolvem400() throws Exception {
+        String comQuebra = """
+                {"titulo":"Jogo\\nINFO falso","plataforma":"PC","genero":"RPG","duracaoMediaHoras":30}""";
+        String comTab = """
+                {"titulo":"X","plataforma":"P\\tC","genero":"RPG","duracaoMediaHoras":30}""";
+        String comCr = """
+                {"titulo":"X","plataforma":"PC","genero":"RP\\rG","duracaoMediaHoras":30}""";
+        for (String corpo : new String[] {comQuebra, comTab, comCr}) {
+            mvc.perform(post("/jogos").contentType(MediaType.APPLICATION_JSON).content(corpo))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.erro", is("VALIDACAO")));
+            mvc.perform(put("/jogos/1").contentType(MediaType.APPLICATION_JSON).content(corpo))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.erro", is("VALIDACAO")));
+        }
+    }
 }

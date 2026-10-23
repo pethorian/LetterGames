@@ -10,3 +10,5 @@ catalogo:
   cache:
     # Cache em memória: os testes rodam sem Redis nem Docker.
     tipo: memoria
+    # 2º evict desligado por padrão: evita evict assíncrono em testes que contam idas ao banco.
+    segundo-evict: 0
