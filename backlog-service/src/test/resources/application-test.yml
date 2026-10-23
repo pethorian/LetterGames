@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:backlog;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+  kafka:
+    admin:
+      # Sem broker nos testes comuns; o teste com @EmbeddedKafka já cria o tópico.
+      auto-create: false
+
+backlog:
+  outbox:
+    # Os testes chamam OutboxPublicador.publicarPendentes() diretamente.
+    publicador-habilitado: false
+
+resilience4j:
+  retry:
+    instances:
+      catalogo:
+        # Só acelera os testes; as demais regras de retry/breaker são as de produção.
+        wait-duration: 10ms

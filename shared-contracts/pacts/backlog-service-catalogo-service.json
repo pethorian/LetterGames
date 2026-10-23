@@ -1,0 +1,126 @@
+{
+  "consumer": {
+    "name": "backlog-service"
+  },
+  "interactions": [
+    {
+      "description": "busca do jogo 42",
+      "key": "6a34455d",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "jogo 42 existe"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "method": "GET",
+        "path": "/jogos/42"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "duracaoMediaHoras": 27,
+            "genero": "Metroidvania",
+            "id": 42,
+            "plataforma": "PC",
+            "titulo": "Hollow Knight"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.duracaoMediaHoras": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.genero": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.id": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "integer"
+                }
+              ]
+            },
+            "$.plataforma": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            },
+            "$.titulo": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "transport": "http",
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "busca do jogo 999 inexistente",
+      "key": "e18bd079",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "jogo 999 n\u00E3o existe"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "method": "GET",
+        "path": "/jogos/999"
+      },
+      "response": {
+        "status": 404
+      },
+      "transport": "http",
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.21"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "catalogo-service"
+  }
+}
