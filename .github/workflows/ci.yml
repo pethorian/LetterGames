@@ -26,6 +26,18 @@ jobs:
       - name: Pact gerado bate com o commitado
         run: git diff --exit-code -- shared-contracts/pacts || { echo "::error::O pact gerado difere do commitado em shared-contracts/pacts. Rode ./mvnw verify e commite o arquivo."; exit 1; }
 
+  testes-perfil-a:
+    name: Testes (perfil A, com Testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: ./mvnw -B verify -Pperfil-a
+
   docker:
     name: Docker (build das imagens)
     runs-on: ubuntu-latest
@@ -68,7 +80,7 @@ jobs:
 
   ci-ok:
     name: ci-ok
-    needs: [testes, docker, versao, fluxo]
+    needs: [testes, testes-perfil-a, docker, versao, fluxo]
     if: always()
     runs-on: ubuntu-latest
     steps:
