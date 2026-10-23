@@ -63,5 +63,9 @@ logging:
     org.apache.kafka: WARN
     org.hibernate: WARN
     com.zaxxer: WARN
+    # Ao derrubar o banco na demo, o pool avisa uma vez por conexão morta; o ⟳ RETRY já conta a história.
+    com.zaxxer.hikari.pool.PoolBase: ERROR
+    # A falha de SQL já aparece no ⟳ RETRY e no 503; o helper do Hibernate repetiria a mesma coisa em várias linhas.
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: OFF
     org.flywaydb: WARN
     org.springframework.kafka: WARN
