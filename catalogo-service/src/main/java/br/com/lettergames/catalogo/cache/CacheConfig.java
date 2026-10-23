@@ -10,9 +10,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
 /**
- * Habilita o Spring Cache. A ordem deixa o advice do cache por fora da transação: assim o
- * {@code @CacheEvict} roda depois do commit e nenhuma leitura concorrente recarrega o valor
- * antigo entre o evict e o commit.
+ * Habilita o Spring Cache. A ordem deixa o advice do cache por fora da transação: o
+ * {@code @CacheEvict} roda depois do commit, o que fecha a janela "evict antes do commit".
+ * A corrida clássica do cache-aside continua: o GET dá MISS e lê o valor antigo, o PUT commita
+ * e faz o evict, e só então o GET grava o valor antigo no cache. Resultado: dado velho até o TTL,
+ * que é o limite do dano. Mitigação: segundo evict atrasado ({@code catalogo.cache.segundo-evict}).
  */
 @Configuration(proxyBeanMethods = false)
 @EnableCaching(order = Ordered.LOWEST_PRECEDENCE - 10)

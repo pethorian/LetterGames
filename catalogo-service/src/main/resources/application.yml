@@ -36,6 +36,8 @@ catalogo:
   cache:
     tipo: redis
     ttl: 10m
+    # Double delete: 2º evict após o commit varre valor antigo regravado por GET concorrente. 0 desliga.
+    segundo-evict: 500ms
 
 logging:
   level:

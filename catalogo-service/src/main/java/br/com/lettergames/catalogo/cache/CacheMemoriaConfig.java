@@ -1,5 +1,7 @@
 package br.com.lettergames.catalogo.cache;
 
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -12,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 public class CacheMemoriaConfig {
 
     @Bean
-    CacheManager cacheManager() {
-        return new CacheManagerComLog(new ConcurrentMapCacheManager("jogos"));
+    CacheManager cacheManager(@Value("${catalogo.cache.segundo-evict:0}") Duration segundoEvict) {
+        return new CacheManagerComLog(new ConcurrentMapCacheManager("jogos"), segundoEvict);
     }
 }
