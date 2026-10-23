@@ -1,0 +1,37 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: backlog-service
+  datasource:
+    # O docker compose sobrescreve via SPRING_DATASOURCE_*.
+    url: jdbc:postgresql://localhost:5434/backlog
+    username: lettergames
+    password: lettergames
+    hikari:
+      connection-timeout: 2000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers
+  health:
+    # Breaker aberto é degradação esperada, não motivo para marcar o serviço DOWN.
+    circuitbreakers:
+      enabled: false
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.hibernate: WARN
+    com.zaxxer: WARN
+    org.flywaydb: WARN
+    org.springframework.kafka: WARN
