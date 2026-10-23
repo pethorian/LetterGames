@@ -8,6 +8,11 @@ spring:
       # Sem broker nos testes comuns; o teste com @EmbeddedKafka já cria o tópico.
       auto-create: false
 
+backlog:
+  outbox:
+    # Os testes chamam OutboxPublicador.publicarPendentes() diretamente.
+    publicador-habilitado: false
+
 resilience4j:
   retry:
     instances:
