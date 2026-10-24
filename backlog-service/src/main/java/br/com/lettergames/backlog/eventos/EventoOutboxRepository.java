@@ -20,9 +20,9 @@ import java.util.UUID;
 public interface EventoOutboxRepository extends JpaRepository<EventoOutbox, UUID> {
 
     /**
-     * Cabeça de fila de cada chave: o evento pendente mais antigo de cada usuário, se nenhum anterior da mesma
-     * chave estiver pendente ou estacionado. Travado com {@code FOR UPDATE SKIP LOCKED} (lock timeout -2 do
-     * Hibernate): outra instância do publicador pula a cabeça em uso e, como o 2º evento daquela chave não é
+     * Cabeça de fila de cada chave: o evento pendente mais antigo (por {@code sequencia}) de cada usuário, se nenhum
+     * anterior da mesma chave estiver pendente ou estacionado. Travado com {@code FOR UPDATE SKIP LOCKED} (lock
+     * timeout -2 do Hibernate): outra instância do publicador pula a cabeça em uso e, como o 2º evento daquela chave não é
      * cabeça enquanto o 1º não for publicado, também não o publica fora de ordem. No H2 o dialeto não suporta
      * SKIP LOCKED e gera só {@code FOR UPDATE}, o que basta para os testes (uma instância).
      */
@@ -33,8 +33,8 @@ public interface EventoOutboxRepository extends JpaRepository<EventoOutbox, UUID
             where e.publicadoEm is null and e.falhouEm is null
               and not exists (select 1 from EventoOutbox anterior
                               where anterior.chave = e.chave and anterior.publicadoEm is null
-                                and anterior.criadoEm < e.criadoEm)
-            order by e.criadoEm""")
+                                and anterior.sequencia < e.sequencia)
+            order by e.sequencia""")
     List<EventoOutbox> travarCabecasPendentes(Limit limite);
 
     @Modifying(flushAutomatically = true)
