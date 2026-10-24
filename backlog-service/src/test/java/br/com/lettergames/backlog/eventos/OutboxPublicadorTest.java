@@ -21,6 +21,7 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.data.domain.Limit;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
@@ -32,6 +33,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -165,6 +167,24 @@ class OutboxPublicadorTest {
         EventoOutbox x2Retido = repository.findById(x2).orElseThrow();
         assertThat(x2Retido.getPublicadoEm()).as("chave segue bloqueada pelo estacionado").isNull();
         assertThat(x2Retido.getTentativas()).isZero();
+    }
+
+    @Test
+    void eventosDaMesmaChaveComCriadoEmIdenticoSaemUmPorVezNaOrdemDeGravacao() {
+        // Relógio com a mesma leitura para os dois: antes da coluna sequencia, os dois viravam cabeça de fila.
+        Instant mesmoInstante = Instant.parse("2026-10-24T14:03:11.123Z");
+        UUID primeiro = UUID.randomUUID();
+        UUID segundo = UUID.randomUUID();
+        transacao.executeWithoutResult(status -> {
+            repository.save(new EventoOutbox(primeiro, Topicos.BACKLOG_EVENTOS, "ugo", TipoEvento.JOGO_ADICIONADO,
+                    "{}", "demo-10", mesmoInstante));
+            repository.save(new EventoOutbox(segundo, Topicos.BACKLOG_EVENTOS, "ugo", TipoEvento.STATUS_ALTERADO,
+                    "{}", "demo-11", mesmoInstante));
+        });
+
+        List<EventoOutbox> cabecas = transacao.execute(status -> repository.travarCabecasPendentes(Limit.of(50)));
+
+        assertThat(cabecas).extracting(EventoOutbox::getEventId).containsExactly(primeiro);
     }
 
     @Test
