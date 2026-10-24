@@ -101,11 +101,11 @@ sequenceDiagram
 | Tópico | `backlog.eventos` (3 partições, chave `usuarioId`) |
 | DLT | `backlog.eventos.DLT` (3 partições, mesma partição do original) |
 | Tipos | `JOGO_ADICIONADO`, `STATUS_ALTERADO`, `JOGO_REMOVIDO` (eventos, fatos no passado), `versao = 1` |
-| Produtor | **transactional outbox** (item + evento na mesma transação) + publicador a cada 500 ms; `acks=all`, `enable.idempotence=true`; falha isola a chave; estaciona após 10 falhas não transitórias |
+| Produtor | **transactional outbox** (item + evento na mesma transação) + publicador a cada 500 ms; `acks=all`, `enable.idempotence=true`; falha isola a chave; estaciona após 10 falhas não transitórias (queda do broker não conta); erro de banco encerra a rodada |
 | Consumidores | groups `estatisticas` e `conquistas`; `enable-auto-commit=false`, `AckMode.RECORD` (offset depois do commit no banco) |
 | **Garantia** | **at-least-once**, com consumidor idempotente (`eventos_processados (event_id, consumidor)`) → efeito exatamente uma vez |
 | Retry | inválido → DLT direto; transitório → 1 s ×2 até 30 s, por até 10 min; processamento → 4 tentativas (1, 2, 4 s) → DLT |
-| Ordem | por usuário: mesma partição, cabeça de fila no outbox e retry bloqueante no consumidor |
+| Ordem | por usuário: mesma partição, cabeça de fila no outbox (ordem de gravação, coluna `sequencia`) e retry bloqueante no consumidor. Por item, gravação = commit (lock de linha) |
 
 ## Cache
 

@@ -39,7 +39,7 @@ Detalhes: [docs/arquitetura.md](docs/arquitetura.md) · Decisões: [docs/adr/](d
   - Produtor: o evento é gravado no outbox na mesma transação do item e publicado depois, com `acks=all` e idempotência ligada.
   - Consumidor: o offset só é commitado depois do commit no banco (`AckMode.RECORD`, auto-commit desligado).
 - **Consumo: idempotente** por `(eventId, consumidor)` em `eventos_processados`, na mesma transação do efeito. Resultado: efeito **exatamente uma vez**.
-- **Ordem: por usuário.** A chave da partição é o `usuarioId`, o outbox publica só a cabeça de fila de cada usuário e o retry do consumidor é bloqueante.
+- **Ordem: por usuário.** A chave da partição é o `usuarioId`, o outbox publica só a cabeça de fila de cada usuário (ordem de gravação) e o retry do consumidor é bloqueante. Para o mesmo item, a ordem de gravação é a de commit (lock de linha, ADR-008); entre itens diferentes do mesmo usuário pode não ser, e as projeções não dependem disso (contadores comutativos).
 - **Falhas no consumidor:**
   - inválida → DLT direto;
   - transitória (banco, lock) → retry com backoff até 10 min, segurando a partição;

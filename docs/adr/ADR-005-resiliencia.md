@@ -32,7 +32,7 @@ As falhas podem ser **transitórias** (rede, banco reiniciando, lock) ou **perma
 ### Produtor (outbox → Kafka)
 
 - `acks=all`, `enable.idempotence=true`, `max.block.ms`/`request.timeout.ms` de 5 s, `delivery.timeout.ms` de 10 s. O publicador espera o envio por `delivery.timeout.ms` + 2 s, para não dar como falho um envio ainda em curso.
-- Falha isola a chave e, depois de 10 falhas não transitórias, estaciona o evento (ADR-003). Falha transitória do Kafka (broker fora) nunca estaciona.
+- Falha isola a chave e, depois de 10 falhas não transitórias, estaciona o evento (ADR-003). Falha transitória do Kafka (broker fora, timeout) e interrupção no shutdown não contam tentativa, então nunca estacionam.
 
 ### Consumidores (estatísticas e conquistas), Spring Kafka
 
@@ -64,4 +64,5 @@ As falhas podem ser **transitórias** (rede, banco reiniciando, lock) ou **perma
 - ✅ Falha permanente é isolada na DLT sem bloquear o resto (`FalhaPermanenteTest`).
 - ✅ Com o catálogo fora, o backlog responde 503 em ~10 ms depois que o breaker abre. As primeiras requisições ainda levam ~1–4 s (timeout + retries) até a janela atingir o mínimo.
 - ⚠️ Retry bloqueante: uma falha transitória longa segura a partição (e os usuários dela) por até 10 min. Trocamos vazão por ordem e correção.
+- ⚠️ O `DefaultErrorHandler` reinicia o backoff quando o tipo da exceção muda (padrão do spring-kafka). Uma falha que alterna de tipo enquanto o banco cai e volta pode passar dos 10 min. Aceito: o risco é atraso, não perda nem fora de ordem.
 - ⚠️ A DLT exige operação manual (inspecionar no Kafka UI e republicar); não há alerta automático.

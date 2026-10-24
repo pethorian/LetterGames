@@ -31,6 +31,8 @@ Evidência do critério 8. O valor deste registro está nos casos em que **a IA 
 | 14 | Pact | O pact gerado no Windows saía com CRLF e o CI (Linux) acusava diferença; os matchers sem exemplo geravam valores aleatórios a cada build | CI (`git diff --exit-code` no pact) | `.gitattributes` com `eol=lf` e exemplos fixos nos matchers |
 | 15 | Demo | Scripts usando `/tmp` (o curl nativo do Windows não enxerga o `/tmp` do Git Bash), caminho `/c/...` passado ao `docker.exe` e `localhost` (~200 ms por chamada depois que as portas foram para `127.0.0.1`) | Rodando a demo de verdade | Corpo lido do stdout, caminho Windows no compose, `127.0.0.1` |
 | 16 | Demo | Com o banco fora, o GET de estatísticas respondia 500 com stack trace no terminal da banca | Rodando a demo de verdade | 503 `BANCO_INDISPONIVEL` em uma linha (PR #10) |
+| 17 | Outbox | O contador de tentativas somava falhas transitórias: depois de uma queda longa do Kafka, **uma** falha permanente estacionava o evento; a interrupção no shutdown também contava como falha do evento | **Revisão final** (segunda revisão independente, depois das correções) | Só falha atribuível ao evento conta; interrupção encerra a rodada sem registrar; erro de banco encerra a rodada; chaves bloqueadas saem da busca (PR #13) |
+| 18 | Catálogo | `\p{Cntrl}` em Java só cobre controles ASCII: o NEL (`\u0085`) passava pela validação | Revisão final | `\p{Cc}`; o teste com NEL falha sem a correção |
 
 ## O que validamos à mão
 
