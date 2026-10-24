@@ -1,0 +1,351 @@
+{
+  "consumer": {
+    "name": "estatisticas-service"
+  },
+  "interactions": [
+    {
+      "comments": {
+        "testname": "br.com.lettergames.estatisticas.consumo.BacklogEventoPactConsumerTest.jogoAdicionadoEntraEmQueroJogar(AsynchronousMessage)"
+      },
+      "contents": {
+        "content": {
+          "duracaoMediaHoras": 27,
+          "eventId": "6f1c2b9e-1a2b-4c3d-9e8f-001122334455",
+          "itemId": 17,
+          "jogoId": 42,
+          "ocorridoEm": "2026-10-24T14:03:11.123Z",
+          "statusAnterior": null,
+          "statusNovo": "QUERO_JOGAR",
+          "tipo": "JOGO_ADICIONADO",
+          "titulo": "Hollow Knight",
+          "usuarioId": "joao",
+          "versao": 1
+        },
+        "contentType": "application/json",
+        "encoded": false
+      },
+      "description": "um evento JOGO_ADICIONADO",
+      "key": "b3801757",
+      "matchingRules": {
+        "body": {
+          "$.duracaoMediaHoras": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.eventId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+              }
+            ]
+          },
+          "$.itemId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.jogoId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.ocorridoEm": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z"
+              }
+            ]
+          },
+          "$.statusNovo": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "QUERO_JOGAR|JOGANDO|ZERADO|ABANDONADO"
+              }
+            ]
+          },
+          "$.titulo": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          },
+          "$.usuarioId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          },
+          "$.versao": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "contentType": "application/json"
+      },
+      "pending": false,
+      "type": "Asynchronous/Messages"
+    },
+    {
+      "comments": {
+        "testname": "br.com.lettergames.estatisticas.consumo.BacklogEventoPactConsumerTest.jogoRemovidoSaiDeZerado(AsynchronousMessage)"
+      },
+      "contents": {
+        "content": {
+          "duracaoMediaHoras": 27,
+          "eventId": "6f1c2b9e-1a2b-4c3d-9e8f-001122334455",
+          "itemId": 17,
+          "jogoId": 42,
+          "ocorridoEm": "2026-10-24T14:03:11.123Z",
+          "statusAnterior": "ZERADO",
+          "statusNovo": null,
+          "tipo": "JOGO_REMOVIDO",
+          "titulo": "Hollow Knight",
+          "usuarioId": "joao",
+          "versao": 1
+        },
+        "contentType": "application/json",
+        "encoded": false
+      },
+      "description": "um evento JOGO_REMOVIDO",
+      "key": "a5e0c7c9",
+      "matchingRules": {
+        "body": {
+          "$.duracaoMediaHoras": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.eventId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+              }
+            ]
+          },
+          "$.itemId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.jogoId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.ocorridoEm": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z"
+              }
+            ]
+          },
+          "$.statusAnterior": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "QUERO_JOGAR|JOGANDO|ZERADO|ABANDONADO"
+              }
+            ]
+          },
+          "$.titulo": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          },
+          "$.usuarioId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          },
+          "$.versao": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "contentType": "application/json"
+      },
+      "pending": false,
+      "type": "Asynchronous/Messages"
+    },
+    {
+      "comments": {
+        "testname": "br.com.lettergames.estatisticas.consumo.BacklogEventoPactConsumerTest.statusAlteradoMoveDeJogandoParaZeradoEDesbloqueiaConquista(AsynchronousMessage)"
+      },
+      "contents": {
+        "content": {
+          "duracaoMediaHoras": 27,
+          "eventId": "6f1c2b9e-1a2b-4c3d-9e8f-001122334455",
+          "itemId": 17,
+          "jogoId": 42,
+          "ocorridoEm": "2026-10-24T14:03:11.123Z",
+          "statusAnterior": "JOGANDO",
+          "statusNovo": "ZERADO",
+          "tipo": "STATUS_ALTERADO",
+          "titulo": "Hollow Knight",
+          "usuarioId": "joao",
+          "versao": 1
+        },
+        "contentType": "application/json",
+        "encoded": false
+      },
+      "description": "um evento STATUS_ALTERADO",
+      "key": "83ad68e7",
+      "matchingRules": {
+        "body": {
+          "$.duracaoMediaHoras": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.eventId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+              }
+            ]
+          },
+          "$.itemId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.jogoId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          },
+          "$.ocorridoEm": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z"
+              }
+            ]
+          },
+          "$.statusAnterior": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "QUERO_JOGAR|JOGANDO|ZERADO|ABANDONADO"
+              }
+            ]
+          },
+          "$.statusNovo": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "regex",
+                "regex": "QUERO_JOGAR|JOGANDO|ZERADO|ABANDONADO"
+              }
+            ]
+          },
+          "$.titulo": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          },
+          "$.usuarioId": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "type"
+              }
+            ]
+          },
+          "$.versao": {
+            "combine": "AND",
+            "matchers": [
+              {
+                "match": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "metadata": {
+        "contentType": "application/json"
+      },
+      "pending": false,
+      "type": "Asynchronous/Messages"
+    }
+  ],
+  "metadata": {
+    "pact-jvm": {
+      "version": "4.6.21"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "backlog-service"
+  }
+}

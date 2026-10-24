@@ -1,0 +1,5 @@
+# Fins de linha previsíveis: o CI (Linux) compara o pact gerado com o commitado.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.jar binary

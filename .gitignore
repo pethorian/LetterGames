@@ -22,3 +22,7 @@ Thumbs.db
 !.env.example
 *.dump
 *.sql.gz
+
+# Claude Code (worktrees locais dos agentes)
+.claude/worktrees/
+.claude/settings.local.json

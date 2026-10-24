@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    # LOCK_TIMEOUT: os testes de concorrência seguram o lock pessimista por alguns segundos.
+    url: jdbc:h2:mem:backlog;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;LOCK_TIMEOUT=15000
+    username: sa
+    password:
+  kafka:
+    admin:
+      # Sem broker nos testes comuns; o teste com @EmbeddedKafka já cria o tópico.
+      auto-create: false
+
+backlog:
+  outbox:
+    # Os testes chamam OutboxPublicador.publicarPendentes() diretamente.
+    publicador-habilitado: false
+
+resilience4j:
+  retry:
+    instances:
+      catalogo:
+        # Só acelera os testes; as demais regras de retry/breaker são as de produção.
+        wait-duration: 10ms

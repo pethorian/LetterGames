@@ -252,3 +252,30 @@ Em ordem de custo × retorno na nota:
 - [ ] Se for decisão de arquitetura → ADR criado ou atualizado
 - [ ] Linha correspondente no `AVALIACAO.md` atualizada
 - [ ] Uso de IA relevante registrado em `docs/ia/registro-uso-ia.md`
+
+---
+
+## 10. Estado da execução (atualizado em 23/10, fim do dia)
+
+O plano acima é o **original**. O que mudou na execução está aqui (detalhes nos ADRs, que valem sobre este documento).
+
+| Fase | Status | PR | Observação |
+|---|---|---|---|
+| F0 Fundação | ✅ | #1 | Spring Boot 3.5.16 (não 3.3), Kafka 3.9.1, Pact 4.6.21, Resilience4j 2.4.0 |
+| F1 Catálogo + cache | ✅ | #3, #7 | + segundo evict atrasado, validação, Testcontainers (perfil A) |
+| F2 Backlog + REST + contrato | ✅ | #2, #9 | 4xx do catálogo → 502; lock pessimista (ADR-008) |
+| F3 Mensageria + idempotência | ✅ | #2, #4, #8 | **Outbox em vez de `AFTER_COMMIT`** (era o extra S1); PK `(event_id, consumidor)` |
+| F4 Resiliência no consumidor | ✅ | #4, #8 | Retry **classificado** (transitória × processamento × inválida); sem `ErrorHandlingDeserializer` (value String + `LeitorEventos`) |
+| F5 Demo em terminais | ✅ | #5, #10 | `00-reset.sh`, `demo-completa.sh`, scripts com `127.0.0.1` |
+| F6 Documentação e evidência | ✅ | #12 | ADRs aceitos (8), AVALIACAO preenchido, evidências em `docs/evidencias/` |
+| F7 Ensaio | ⏳ | — | **Com o grupo:** 2 ensaios cronometrados + arguição cruzada (§4) |
+
+| Extra | Status |
+|---|---|
+| S1 Transactional outbox | ✅ entregue (ADR-003) |
+| S2 2º consumer group `conquistas` | ✅ entregue |
+| S3 Message Pact do `BacklogEvento` | ✅ entregue (ADR-006) |
+| S4 Testcontainers no `perfil-a` | ✅ entregue (`CatalogoInfraRealTest`, job próprio no CI) |
+| S5 Front mínimo | ❌ não feito (decisão do grupo: tudo no terminal) |
+
+Revisão independente (revisor de código + auditor de testes) depois da primeira integração, com achados corrigidos nos PRs #7–#11. Ver [docs/ia/registro-uso-ia.md](ia/registro-uso-ia.md).

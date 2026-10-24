@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: Testes (perfil B, sem Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: ./mvnw -B verify
+      - name: Pact gerado bate com o commitado
+        run: git diff --exit-code -- shared-contracts/pacts || { echo "::error::O pact gerado difere do commitado em shared-contracts/pacts. Rode ./mvnw verify e commite o arquivo."; exit 1; }
+
+  testes-perfil-a:
+    name: Testes (perfil A, com Testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: ./mvnw -B verify -Pperfil-a
+
+  docker:
+    name: Docker (build das imagens)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
+
+  versao:
+    name: Versão consistente
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-version.sh
+
+  fluxo:
+    name: Regras do fluxo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Branch nasceu do lugar certo (develop; hotfix/* da main)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: bash scripts/check-branch-origin.sh "$BASE_REF" "$HEAD_REF" HEAD
+      - name: PR para main só vem de develop ou hotfix
+        if: github.base_ref == 'main'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            develop|hotfix/*) ;;
+            *) echo "::error::PR para main deve sair de develop ou hotfix/* (origem: $HEAD_REF)"; exit 1 ;;
+          esac
+      - name: PR para main exige entrada no CHANGELOG
+        if: github.base_ref == 'main'
+        run: bash scripts/check-version.sh --changelog
+
+  ci-ok:
+    name: ci-ok
+    needs: [testes, testes-perfil-a, docker, versao, fluxo]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Todos os jobs passaram?
+        env:
+          RESULTADOS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Resultados: $RESULTADOS"
+          for r in $RESULTADOS; do
+            [ "$r" = "success" ] || { echo "::error::Algum job falhou ou foi cancelado"; exit 1; }
+          done
+
+  auto-aprovar:
+    name: Aprovar e mergear (develop)
+    needs: ci-ok
+    if: >-
+      github.event.pull_request.base.ref == 'develop' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+    steps:
+      - name: Aprovar
+        run: gh pr review --approve "$PR_URL" || echo "::warning::Aprovação automática não permitida (ative 'Allow GitHub Actions to create and approve pull requests'); seguindo para o merge."
+      - name: Mergear (preserva os commits da branch)
+        run: gh pr merge --merge --delete-branch "$PR_URL"

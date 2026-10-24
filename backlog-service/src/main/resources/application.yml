@@ -1,0 +1,98 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: backlog-service
+  datasource:
+    # O docker compose sobrescreve via SPRING_DATASOURCE_*.
+    url: jdbc:postgresql://localhost:5434/backlog
+    username: lettergames
+    password: lettergames
+    hikari:
+      connection-timeout: 2000
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  kafka:
+    # O docker compose sobrescreve via SPRING_KAFKA_BOOTSTRAP_SERVERS.
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        # Kafka fora não pode travar o publicador do outbox por minutos. O publicador espera o envio por
+        # delivery.timeout.ms + folga; o Kafka exige delivery.timeout.ms >= request.timeout.ms + linger.ms.
+        max.block.ms: 5000
+        request.timeout.ms: 5000
+        linger.ms: 0
+        delivery.timeout.ms: 10000
+
+backlog:
+  outbox:
+    publicador-habilitado: true
+    intervalo: 500ms
+    # Falhas não transitórias até estacionar o evento (falhou_em); a chave fica bloqueada até reprocessar.
+    max-tentativas: 10
+
+catalogo:
+  url: ${CATALOGO_URL:http://localhost:8081}
+  timeout:
+    conexao: 1s
+    leitura: 2s
+
+resilience4j:
+  retry:
+    instances:
+      catalogo:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        # Só IO, timeout e 5xx (CatalogoIndisponivelException) são repetidos.
+        ignore-exceptions:
+          - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          - br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException
+          # Breaker aberto: repetir só atrasaria o 503 (o Retry envolve o CircuitBreaker).
+          - br.com.lettergames.backlog.catalogo.CatalogoBreakerAbertoException
+  circuitbreaker:
+    instances:
+      catalogo:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        record-exceptions:
+          - br.com.lettergames.backlog.catalogo.CatalogoIndisponivelException
+        # Ignoradas nem contam como sucesso: 4xx não diz nada sobre a saúde do catálogo.
+        ignore-exceptions:
+          - br.com.lettergames.backlog.catalogo.JogoInexistenteNoCatalogoException
+          - br.com.lettergames.backlog.catalogo.CatalogoRequisicaoInvalidaException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers
+  health:
+    # Breaker aberto é degradação esperada, não motivo para marcar o serviço DOWN.
+    circuitbreakers:
+      enabled: false
+
+logging:
+  level:
+    org.apache.kafka: WARN
+    org.hibernate: WARN
+    com.zaxxer: WARN
+    org.flywaydb: WARN
+    org.springframework.kafka: WARN
