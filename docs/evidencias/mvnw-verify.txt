@@ -1,29 +1,29 @@
-# ./mvnw verify — 2026-10-23 22:32 (Windows 11, JDK 21)
+# ./mvnw verify — 2026-10-23 22:52 (Windows 11, JDK 21)
 
 ## Perfil B (padrão, sem Docker)
 Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
 Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
-Tests run: 73, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 75, Failures: 0, Errors: 0, Skipped: 0
 Tests run: 29, Failures: 0, Errors: 0, Skipped: 0
 LetterGames — Backlog de Jogos ..................... SUCCESS [  0.006 s]
-shared-contracts ................................... SUCCESS [  2.962 s]
-estatisticas-service ............................... SUCCESS [ 38.470 s]
-backlog-service .................................... SUCCESS [ 55.620 s]
-catalogo-service ................................... SUCCESS [ 22.901 s]
+shared-contracts ................................... SUCCESS [  2.774 s]
+estatisticas-service ............................... SUCCESS [ 31.594 s]
+backlog-service .................................... SUCCESS [ 47.167 s]
+catalogo-service ................................... SUCCESS [ 21.425 s]
 BUILD SUCCESS
-Total time:  02:00 min
+Total time:  01:43 min
 
 ## Perfil A (-Pperfil-a, com Testcontainers)
 Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
 Tests run: 54, Failures: 0, Errors: 0, Skipped: 0
-Tests run: 73, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 75, Failures: 0, Errors: 0, Skipped: 0
 Tests run: 34, Failures: 0, Errors: 0, Skipped: 0
-LetterGames — Backlog de Jogos ..................... SUCCESS [  0.003 s]
-shared-contracts ................................... SUCCESS [  3.292 s]
-estatisticas-service ............................... SUCCESS [ 33.546 s]
-backlog-service .................................... SUCCESS [ 51.007 s]
-catalogo-service ................................... SUCCESS [ 34.197 s]
+LetterGames — Backlog de Jogos ..................... SUCCESS [  0.005 s]
+shared-contracts ................................... SUCCESS [  2.812 s]
+estatisticas-service ............................... SUCCESS [ 33.690 s]
+backlog-service .................................... SUCCESS [ 47.889 s]
+catalogo-service ................................... SUCCESS [ 32.771 s]
 BUILD SUCCESS
-Total time:  02:02 min
+Total time:  01:57 min
 
-Ordem dos módulos: shared-contracts (2), estatisticas-service (54), backlog-service (73), catalogo-service (29 no B / 34 no A). Total: 158 (B) / 163 (A).
+Ordem dos módulos: shared-contracts (2), estatisticas-service (54), backlog-service (75), catalogo-service (29 no B / 34 no A). Total: 160 (B) / 165 (A).

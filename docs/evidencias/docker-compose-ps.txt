@@ -2,9 +2,9 @@ SERVICE                 IMAGE                                    STATUS
 backlog-service         lettergames/backlog-service:local        Up About a minute (healthy)
 catalogo-service        lettergames/catalogo-service:local       Up About a minute (healthy)
 estatisticas-service    lettergames/estatisticas-service:local   Up About a minute (healthy)
-kafka                   apache/kafka:3.9.1                       Up 2 minutes (healthy)
-kafka-ui                provectuslabs/kafka-ui:v0.7.2            Up 2 minutes
-postgres-backlog        postgres:16-alpine                       Up 2 minutes (healthy)
-postgres-catalogo       postgres:16-alpine                       Up 2 minutes (healthy)
-postgres-estatisticas   postgres:16-alpine                       Up 27 seconds (healthy)
-redis                   redis:7.4-alpine                         Up 2 minutes (healthy)
+kafka                   apache/kafka:3.9.1                       Up 29 minutes (healthy)
+kafka-ui                provectuslabs/kafka-ui:v0.7.2            Up 29 minutes
+postgres-backlog        postgres:16-alpine                       Up 29 minutes (healthy)
+postgres-catalogo       postgres:16-alpine                       Up 29 minutes (healthy)
+postgres-estatisticas   postgres:16-alpine                       Up 28 seconds (healthy)
+redis                   redis:7.4-alpine                         Up 29 minutes (healthy)
