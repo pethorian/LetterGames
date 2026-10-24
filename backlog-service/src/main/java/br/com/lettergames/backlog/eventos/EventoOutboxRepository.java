@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,12 +32,24 @@ public interface EventoOutboxRepository extends JpaRepository<EventoOutbox, UUID
     @QueryHints(@QueryHint(name = AvailableSettings.JAKARTA_LOCK_TIMEOUT, value = "-2"))
     @Query("""
             select e from EventoOutbox e
-            where e.publicadoEm is null and e.falhouEm is null
+            where e.publicadoEm is null and e.falhouEm is null and e.chave not in :ignorar
               and not exists (select 1 from EventoOutbox anterior
                               where anterior.chave = e.chave and anterior.publicadoEm is null
                                 and anterior.sequencia < e.sequencia)
             order by e.sequencia""")
-    List<EventoOutbox> travarCabecasPendentes(Limit limite);
+    List<EventoOutbox> travarCabecasPendentesExceto(@Param("ignorar") Collection<String> ignorar, Limit limite);
+
+    /** {@code ignorar}: chaves já bloqueadas no ciclo (falharam), para não ocuparem o lote das outras. */
+    default List<EventoOutbox> travarCabecasPendentes(Collection<String> ignorar, Limit limite) {
+        // "" nunca é chave (usuarioId tem 1+ caracteres) e evita um NOT IN vazio, que nem todo banco aceita.
+        List<String> comSentinela = new ArrayList<>(ignorar);
+        comSentinela.add("");
+        return travarCabecasPendentesExceto(comSentinela, limite);
+    }
+
+    default List<EventoOutbox> travarCabecasPendentes(Limit limite) {
+        return travarCabecasPendentes(List.of(), limite);
+    }
 
     @Modifying(flushAutomatically = true)
     @Transactional(propagation = Propagation.MANDATORY)
