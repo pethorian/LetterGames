@@ -17,5 +17,5 @@ public record JogoRequisicao(
         @NotNull @Positive Integer duracaoMediaHoras) {
 
     /** Nenhum caractere de controle (inclui \n, \r, \t) nem separador de linha/parágrafo Unicode. */
-    static final String SEM_CONTROLE = "[^\\p{Cntrl}\\u2028\\u2029]*";
+    static final String SEM_CONTROLE = "[^\\p{Cc}\\u2028\\u2029]*";
 }
