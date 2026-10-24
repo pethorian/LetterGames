@@ -137,11 +137,12 @@ O grupo tem 3 pessoas, então os opcionais não são obrigatórios. Entregamos:
 
 ## Observações honestas sobre processo
 
-- O projeto foi concentrado em poucos dias antes da banca, não em semanas. Para deixar o processo auditável, cada demanda virou branch e PR com CI, e são 11 PRs para a `develop`:
+- O projeto foi concentrado em poucos dias antes da banca, não em semanas. Para deixar o processo auditável, cada demanda virou branch e PR com CI, e são 12 PRs para a `develop`:
   - #1 fundação;
   - #2 a #5 serviços e demo;
   - #6 CI do perfil A;
   - #7 a #9 correções da revisão;
-  - #10 e #11 ajustes encontrados ao validar a demo e o perfil A.
+  - #10 e #11 ajustes encontrados ao validar a demo e o perfil A;
+  - #12 documentação final e evidências.
 - Os commits são pequenos, em Conventional Commits, e os testes estão em commits `test(...)` próprios.
 - Sem autenticação: `usuarioId` vem do path (limitação declarada no ADR-001).
