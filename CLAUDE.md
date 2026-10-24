@@ -20,26 +20,27 @@ Um **backlog de jogos**: o jogador cadastra jogos do catálogo no seu backlog (`
 | Módulo | Porta | Banco | Responsabilidade |
 |---|---|---|---|
 | `catalogo-service` | 8081 | `postgres-catalogo` (5433) + Redis | Jogos (título, plataforma, gênero, duração média). Cache-aside no Redis. |
-| `backlog-service` | 8082 | `postgres-backlog` (5434) | Backlog do usuário. Consulta o catálogo por REST (timeout, retry, circuit breaker) e publica eventos no Kafka. |
-| `estatisticas-service` | 8083 | `postgres-estatisticas` (5435) | Consome eventos de forma idempotente, calcula estatísticas e conquistas. |
+| `backlog-service` | 8082 | `postgres-backlog` (5434) | Backlog do usuário. Consulta o catálogo por REST (timeout, retry, circuit breaker), grava item + evento no **outbox** na mesma transação e publica no Kafka. Lock pessimista em PATCH/DELETE. |
+| `estatisticas-service` | 8083 | `postgres-estatisticas` (5435) | Dois consumer groups (`estatisticas`, `conquistas`), idempotentes por `(eventId, consumidor)`; retry classificado e DLT. |
 | `shared-contracts` | — | — | DTOs, eventos (`BacklogEvento`) e arquivos Pact (`pacts/`). |
 
-Infraestrutura: Kafka `9092`, Kafka UI `8080`, Redis `6379`.
+Infraestrutura: Kafka `9092`, Kafka UI `8080`, Redis `6379`, todas publicadas só em `127.0.0.1` (use `127.0.0.1`, não `localhost`, em scripts: o curl tentaria `::1` antes).
 
-Tópicos: `backlog.eventos` (chave = `usuarioId`) e `backlog.eventos.DLT`.
+Tópicos: `backlog.eventos` (3 partições, chave = `usuarioId`) e `backlog.eventos.DLT`.
 
 ## Comandos
 
 ```bash
 ./mvnw verify                      # perfil B (padrão): testes pura-JVM, sem Docker
-./mvnw verify -Pperfil-a           # inclui testes com Testcontainers (exige Docker)
+./mvnw verify -Pperfil-a           # inclui testes @Tag("docker") com Testcontainers (exige Docker)
 docker compose up -d --build       # perfil A: sobe tudo
 docker compose logs -f backlog-service
-./scripts/demo/01-cadastrar-jogos.sh   # roteiro de demo (ver docs/APRESENTACAO.md)
-pwsh ./scripts/abrir-terminais.ps1     # abre o layout de terminais da banca (Windows Terminal)
+./scripts/demo/00-reset.sh         # limpa bases, cache e tópicos (mantém o seed do catálogo)
+./scripts/demo/demo-completa.sh    # as 7 cenas em ordem (SEM_PAUSA=1 para rodar direto)
+powershell -ExecutionPolicy Bypass -File scripts/abrir-terminais.ps1   # layout de terminais da banca
 ```
 
-> Ordem dos módulos no `pom.xml` raiz: `shared-contracts`, `backlog-service`, `catalogo-service`, `estatisticas-service`. O `backlog-service` gera o pact (consumidor) **antes** de o `catalogo-service` verificá-lo (provedor).
+> Ordem dos módulos no `pom.xml` raiz: `shared-contracts`, `estatisticas-service`, `backlog-service`, `catalogo-service`. Cada consumidor gera o seu pact antes de o provedor verificá-lo: estatísticas → mensagem verificada pelo backlog; backlog → REST verificado pelo catálogo. O CI falha se o pact regenerado diferir do commitado (`.gitattributes` mantém `eol=lf`).
 
 ## Regras do projeto
 
@@ -47,10 +48,11 @@ pwsh ./scripts/abrir-terminais.ps1     # abre o layout de terminais da banca (Wi
 2. **Eventos vivem em `shared-contracts`.** Mudou o evento → incrementa `versao`, atualiza o pact e o ADR, se a mudança for de decisão.
 3. **Toda decisão arquitetural vira ADR** em `docs/adr/ADR-NNN-titulo.md` (contexto, decisão, alternativas, trade-offs). ADR descreve *por quê*, não *o quê*.
 4. **Toda evidência nova vai para o `AVALIACAO.md`** (critério → arquivo/classe/teste/commit). O que não estiver lá a banca não considera.
-5. **Consumidor sempre idempotente:** registrar `eventId` em `eventos_processados` na **mesma transação** da atualização.
-6. **Logs de demo** usam o padrão `HH:mm:ss.SSS [correlationId] NIVEL Classe - mensagem` com marcadores visuais (`→ REST`, `⇢ KAFKA PUB`, `⇠ KAFKA SUB`, `✔ CACHE HIT`, `✘ CACHE MISS`, `⟳ RETRY`, `☠ DLT`, `⚡ BREAKER`). O `correlationId` vem do header HTTP `X-Correlation-Id` e é repassado no header Kafka `correlationId`.
-7. `./mvnw verify` precisa passar **sem Docker** antes de cada PR.
-8. Registre todo uso relevante de IA em `docs/ia/registro-uso-ia.md` (o que foi pedido, o que veio, **o que validamos à mão**). Isso alimenta o critério 8.
+5. **Consumidor sempre idempotente:** registrar `(eventId, consumidor)` em `eventos_processados` na **mesma transação** da atualização (verifica e insere; a PK é a rede de segurança). **Produtor sempre via outbox:** nunca publicar no Kafka direto de um service.
+6. **Logs de demo** usam o padrão `HH:mm:ss.SSS NIVEL [correlationId] Classe - mensagem` com marcadores visuais (`→ REST`, `⇢ KAFKA PUB`, `⇠ KAFKA SUB`, `✔ CACHE HIT`, `✘ CACHE MISS`, `🗑 CACHE EVICT`, `⟳ RETRY`, `☠ DLT`, `⚡ BREAKER`, `↺ DUPLICADO`). O `correlationId` vem do header HTTP `X-Correlation-Id` (validado por `[A-Za-z0-9._-]{1,64}`), passa pelo outbox e vai no header Kafka `correlationId`. Texto vindo de fora (título, motivo) é limpo de caracteres de controle antes de logar.
+7. `./mvnw verify` precisa passar **sem Docker** antes de cada PR. Testes não podem alterar dados do seed (o H2 em memória é compartilhado entre contextos Spring): criem os próprios registros.
+8. Mudou comportamento descrito num ADR, no `docs/arquitetura.md` ou no `docs/APRESENTACAO.md`? Atualize o documento no mesmo PR. A revisão já encontrou ADR contradizendo o código.
+9. Registre todo uso relevante de IA em `docs/ia/registro-uso-ia.md` (o que foi pedido, o que veio, **o que validamos à mão**). Isso alimenta o critério 8.
 
 ## Fluxo Git (resumo das preferências globais)
 

@@ -1,0 +1,151 @@
+backlog-service-1       | 01:26:25.004 INFO  [sistema] [/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+backlog-service-1       | 01:26:25.005 INFO  [sistema] DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+backlog-service-1       | 01:26:25.007 INFO  [sistema] DispatcherServlet - Completed initialization in 2 ms
+catalogo-service-1      | 01:26:25.944 INFO  [demo-01a] JogoService - Jogo 11 criado: Outer Wilds
+catalogo-service-1      | 01:26:26.182 INFO  [demo-01b] JogoService - Jogo 12 criado: Hollow Knight: Silksong
+backlog-service-1       | 01:26:27.156 INFO  [demo-02] CatalogoClient - → REST GET catalogo-service /jogos/1
+catalogo-service-1      | 01:26:27.870 INFO  [demo-02] JogoService - ✘ CACHE MISS jogos::1 → consultando postgres-catalogo
+backlog-service-1       | 01:26:27.930 INFO  [demo-02] CatalogoClient - ← REST 200 catalogo-service /jogos/1 (774 ms)
+backlog-service-1       | 01:26:28.042 INFO  [demo-02] BacklogService - ✚ ITEM salvo usuario=joao jogo="Hollow Knight" status=QUERO_JOGAR · evento JOGO_ADICIONADO no outbox
+backlog-service-1       | 01:26:28.807 INFO  [demo-02] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=JOGO_ADICIONADO eventId=953d4ad7-dee5-436e-8f96-58cddd5cfb70 partição=2 offset=0
+estatisticas-service-1  | 01:26:28.830 INFO  [demo-02] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=0 key=joao tipo=JOGO_ADICIONADO eventId=953d4ad7-dee5-436e-8f96-58cddd5cfb70
+estatisticas-service-1  | 01:26:28.830 INFO  [demo-02] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=0 key=joao tipo=JOGO_ADICIONADO eventId=953d4ad7-dee5-436e-8f96-58cddd5cfb70
+estatisticas-service-1  | 01:26:29.519 INFO  [demo-02] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=1 jogando=0 zerados=0 abandonados=0 · 27h pendentes · 0h zeradas
+catalogo-service-1      | 01:26:30.723 INFO  [demo-03a] JogoService - ✘ CACHE MISS jogos::3 → consultando postgres-catalogo
+catalogo-service-1      | 01:26:30.948 INFO  [demo-03b] CacheComLog - ✔ CACHE HIT jogos::3
+catalogo-service-1      | 01:26:31.901 INFO  [demo-03c] CacheComLog - 🗑 CACHE EVICT jogos::3
+catalogo-service-1      | 01:26:32.109 INFO  [demo-03d] JogoService - ✘ CACHE MISS jogos::3 → consultando postgres-catalogo
+catalogo-service-1      | 01:26:32.403 INFO  [sistema] CacheComLog - 🗑 CACHE EVICT (2º, atrasado) jogos::3
+catalogo-service-1      | 01:26:32.805 INFO  [sistema] GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+catalogo-service-1      | 01:26:32.807 INFO  [sistema] GracefulShutdown - Graceful shutdown complete
+catalogo-service-1      | 01:26:32.827 INFO  [sistema] LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+backlog-service-1       | 01:26:33.485 INFO  [demo-04-4] CatalogoClient - → REST GET catalogo-service /jogos/4
+backlog-service-1       | 01:26:34.489 WARN  [demo-04-4] CatalogoClient - ← REST FALHA catalogo-service /jogos/4 (1004 ms): ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:34.496 WARN  [demo-04-4] ResilienciaCatalogoLogs - ⟳ RETRY catalogo tentativa 2/3: falha ao chamar o catálogo: ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:34.697 INFO  [demo-04-4] CatalogoClient - → REST GET catalogo-service /jogos/4
+backlog-service-1       | 01:26:35.700 WARN  [demo-04-4] CatalogoClient - ← REST FALHA catalogo-service /jogos/4 (1003 ms): ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:35.702 WARN  [demo-04-4] ResilienciaCatalogoLogs - ⟳ RETRY catalogo tentativa 3/3: falha ao chamar o catálogo: ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:36.103 INFO  [demo-04-4] CatalogoClient - → REST GET catalogo-service /jogos/4
+backlog-service-1       | 01:26:37.105 WARN  [demo-04-4] CatalogoClient - ← REST FALHA catalogo-service /jogos/4 (1002 ms): ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:37.108 WARN  [demo-04-4] TratadorDeErros - ✘ 503 catálogo indisponível: falha ao chamar o catálogo: ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:37.311 INFO  [demo-04-5] CatalogoClient - → REST GET catalogo-service /jogos/5
+backlog-service-1       | 01:26:38.313 WARN  [demo-04-5] CatalogoClient - ← REST FALHA catalogo-service /jogos/5 (1002 ms): ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:38.318 WARN  [demo-04-5] ResilienciaCatalogoLogs - ⚡ BREAKER catalogo CLOSED → OPEN
+backlog-service-1       | 01:26:38.319 WARN  [demo-04-5] ResilienciaCatalogoLogs - ⟳ RETRY catalogo tentativa 2/3: falha ao chamar o catálogo: ConnectException: HTTP connect timed out
+backlog-service-1       | 01:26:38.520 WARN  [demo-04-5] CatalogoClient - ⚡ BREAKER catalogo ABERTO: chamada recusada sem tocar no catálogo
+backlog-service-1       | 01:26:38.521 WARN  [demo-04-5] TratadorDeErros - ✘ 503 catálogo indisponível: Circuit breaker do catálogo aberto
+backlog-service-1       | 01:26:38.717 WARN  [demo-04-6] CatalogoClient - ⚡ BREAKER catalogo ABERTO: chamada recusada sem tocar no catálogo
+backlog-service-1       | 01:26:38.718 WARN  [demo-04-6] TratadorDeErros - ✘ 503 catálogo indisponível: Circuit breaker do catálogo aberto
+backlog-service-1       | 01:26:38.915 WARN  [demo-04-7] CatalogoClient - ⚡ BREAKER catalogo ABERTO: chamada recusada sem tocar no catálogo
+backlog-service-1       | 01:26:38.916 WARN  [demo-04-7] TratadorDeErros - ✘ 503 catálogo indisponível: Circuit breaker do catálogo aberto
+backlog-service-1       | 01:26:39.112 WARN  [demo-04-8] CatalogoClient - ⚡ BREAKER catalogo ABERTO: chamada recusada sem tocar no catálogo
+backlog-service-1       | 01:26:39.113 WARN  [demo-04-8] TratadorDeErros - ✘ 503 catálogo indisponível: Circuit breaker do catálogo aberto
+backlog-service-1       | 01:26:39.314 WARN  [demo-04-9] CatalogoClient - ⚡ BREAKER catalogo ABERTO: chamada recusada sem tocar no catálogo
+backlog-service-1       | 01:26:39.315 WARN  [demo-04-9] TratadorDeErros - ✘ 503 catálogo indisponível: Circuit breaker do catálogo aberto
+catalogo-service-1      | 01:26:41.917 INFO  [sistema] CatalogoApplication - Starting CatalogoApplication v0.1.0-beta.1 using Java 21.0.12.1 with PID 1 (/app/app.jar started by app in /app)
+catalogo-service-1      | 01:26:41.919 INFO  [sistema] CatalogoApplication - No active profile set, falling back to 1 default profile: "default"
+catalogo-service-1      | 01:26:43.043 INFO  [sistema] RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+catalogo-service-1      | 01:26:43.045 INFO  [sistema] RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+catalogo-service-1      | 01:26:43.245 INFO  [sistema] RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 188 ms. Found 1 JPA repository interface.
+catalogo-service-1      | 01:26:43.262 INFO  [sistema] RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+catalogo-service-1      | 01:26:43.263 INFO  [sistema] RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+catalogo-service-1      | 01:26:43.278 INFO  [sistema] RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 4 ms. Found 0 Redis repository interfaces.
+catalogo-service-1      | 01:26:43.278 INFO  [sistema] RepositoryConfigurationExtensionSupport - Spring Data Redis - Could not safely identify store assignment for repository candidate interface br.com.lettergames.catalogo.dominio.JogoRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+catalogo-service-1      | 01:26:43.812 INFO  [sistema] TomcatWebServer - Tomcat initialized with port 8081 (http)
+catalogo-service-1      | 01:26:43.824 INFO  [sistema] Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+catalogo-service-1      | 01:26:43.826 INFO  [sistema] StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.55]
+catalogo-service-1      | 01:26:43.826 INFO  [sistema] StandardService - Starting service [Tomcat]
+catalogo-service-1      | 01:26:43.857 INFO  [sistema] [/] - Initializing Spring embedded WebApplicationContext
+catalogo-service-1      | 01:26:43.858 INFO  [sistema] ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1893 ms
+catalogo-service-1      | 01:26:45.142 INFO  [sistema] SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+catalogo-service-1      | 01:26:46.395 INFO  [sistema] LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+catalogo-service-1      | 01:26:47.880 INFO  [sistema] EndpointLinksResolver - Exposing 2 endpoints beneath base path '/actuator'
+catalogo-service-1      | 01:26:47.947 INFO  [sistema] Http11NioProtocol - Starting ProtocolHandler ["http-nio-8081"]
+catalogo-service-1      | 01:26:47.962 INFO  [sistema] TomcatWebServer - Tomcat started on port 8081 (http) with context path '/'
+catalogo-service-1      | 01:26:47.974 INFO  [sistema] CatalogoApplication - Started CatalogoApplication in 6.622 seconds (process running for 7.243)
+catalogo-service-1      | 01:26:49.468 INFO  [sistema] DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+catalogo-service-1      | 01:26:49.468 INFO  [sistema] [/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+catalogo-service-1      | 01:26:49.469 INFO  [sistema] DispatcherServlet - Completed initialization in 1 ms
+backlog-service-1       | 01:26:53.318 WARN  [sistema] ResilienciaCatalogoLogs - ⚡ BREAKER catalogo OPEN → HALF_OPEN
+backlog-service-1       | 01:27:04.656 INFO  [demo-04-ok-4] CatalogoClient - → REST GET catalogo-service /jogos/4
+catalogo-service-1      | 01:27:05.241 INFO  [demo-04-ok-4] JogoService - ✘ CACHE MISS jogos::4 → consultando postgres-catalogo
+backlog-service-1       | 01:27:05.331 INFO  [demo-04-ok-4] CatalogoClient - ← REST 200 catalogo-service /jogos/4 (674 ms)
+backlog-service-1       | 01:27:05.341 INFO  [demo-04-ok-4] BacklogService - ✚ ITEM salvo usuario=joao jogo="Elden Ring" status=QUERO_JOGAR · evento JOGO_ADICIONADO no outbox
+backlog-service-1       | 01:27:05.550 INFO  [demo-04-ok-4] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=JOGO_ADICIONADO eventId=d8d1d375-48c8-496d-81ab-dbbbec01ee76 partição=2 offset=1
+estatisticas-service-1  | 01:27:05.552 INFO  [demo-04-ok-4] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=1 key=joao tipo=JOGO_ADICIONADO eventId=d8d1d375-48c8-496d-81ab-dbbbec01ee76
+estatisticas-service-1  | 01:27:05.552 INFO  [demo-04-ok-4] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=1 key=joao tipo=JOGO_ADICIONADO eventId=d8d1d375-48c8-496d-81ab-dbbbec01ee76
+backlog-service-1       | 01:27:05.553 INFO  [demo-04-ok-5] CatalogoClient - → REST GET catalogo-service /jogos/5
+catalogo-service-1      | 01:27:05.559 INFO  [demo-04-ok-5] JogoService - ✘ CACHE MISS jogos::5 → consultando postgres-catalogo
+backlog-service-1       | 01:27:05.566 INFO  [demo-04-ok-5] CatalogoClient - ← REST 200 catalogo-service /jogos/5 (12 ms)
+estatisticas-service-1  | 01:27:05.569 INFO  [demo-04-ok-4] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=2 jogando=0 zerados=0 abandonados=0 · 125h pendentes · 0h zeradas
+backlog-service-1       | 01:27:05.575 INFO  [demo-04-ok-5] BacklogService - ✚ ITEM salvo usuario=joao jogo="Hades" status=QUERO_JOGAR · evento JOGO_ADICIONADO no outbox
+backlog-service-1       | 01:27:05.782 INFO  [demo-04-ok-6] CatalogoClient - → REST GET catalogo-service /jogos/6
+catalogo-service-1      | 01:27:05.787 INFO  [demo-04-ok-6] JogoService - ✘ CACHE MISS jogos::6 → consultando postgres-catalogo
+backlog-service-1       | 01:27:05.792 INFO  [demo-04-ok-6] CatalogoClient - ← REST 200 catalogo-service /jogos/6 (10 ms)
+backlog-service-1       | 01:27:05.794 WARN  [demo-04-ok-6] ResilienciaCatalogoLogs - ⚡ BREAKER catalogo HALF_OPEN → CLOSED
+backlog-service-1       | 01:27:05.802 INFO  [demo-04-ok-6] BacklogService - ✚ ITEM salvo usuario=joao jogo="Stardew Valley" status=QUERO_JOGAR · evento JOGO_ADICIONADO no outbox
+backlog-service-1       | 01:27:06.065 INFO  [demo-04-ok-5] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=JOGO_ADICIONADO eventId=005ed170-bfb8-4a6f-9a87-4e7d96c0764f partição=2 offset=2
+estatisticas-service-1  | 01:27:06.066 INFO  [demo-04-ok-5] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=2 key=joao tipo=JOGO_ADICIONADO eventId=005ed170-bfb8-4a6f-9a87-4e7d96c0764f
+estatisticas-service-1  | 01:27:06.066 INFO  [demo-04-ok-5] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=2 key=joao tipo=JOGO_ADICIONADO eventId=005ed170-bfb8-4a6f-9a87-4e7d96c0764f
+estatisticas-service-1  | 01:27:06.072 INFO  [demo-04-ok-5] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=3 jogando=0 zerados=0 abandonados=0 · 168h pendentes · 0h zeradas
+backlog-service-1       | 01:27:06.080 INFO  [demo-04-ok-6] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=JOGO_ADICIONADO eventId=c616eef2-ad0b-449e-aeef-fc6c9b50fff7 partição=2 offset=3
+estatisticas-service-1  | 01:27:06.081 INFO  [demo-04-ok-6] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=3 key=joao tipo=JOGO_ADICIONADO eventId=c616eef2-ad0b-449e-aeef-fc6c9b50fff7
+estatisticas-service-1  | 01:27:06.082 INFO  [demo-04-ok-6] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=3 key=joao tipo=JOGO_ADICIONADO eventId=c616eef2-ad0b-449e-aeef-fc6c9b50fff7
+estatisticas-service-1  | 01:27:06.088 INFO  [demo-04-ok-6] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=4 jogando=0 zerados=0 abandonados=0 · 263h pendentes · 0h zeradas
+backlog-service-1       | 01:27:06.361 INFO  [demo-05a] BacklogService - ✎ STATUS usuario=joao jogo="Hollow Knight" QUERO_JOGAR → JOGANDO · evento STATUS_ALTERADO no outbox
+backlog-service-1       | 01:27:06.596 INFO  [demo-05a] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=STATUS_ALTERADO eventId=05f3f2f9-58c3-4379-9cef-68020273719c partição=2 offset=4
+estatisticas-service-1  | 01:27:06.597 INFO  [demo-05a] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=4 key=joao tipo=STATUS_ALTERADO eventId=05f3f2f9-58c3-4379-9cef-68020273719c
+estatisticas-service-1  | 01:27:06.597 INFO  [demo-05a] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=4 key=joao tipo=STATUS_ALTERADO eventId=05f3f2f9-58c3-4379-9cef-68020273719c
+estatisticas-service-1  | 01:27:06.603 INFO  [demo-05a] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=3 jogando=1 zerados=0 abandonados=0 · 263h pendentes · 0h zeradas
+backlog-service-1       | 01:27:07.618 INFO  [demo-05b] BacklogService - ✎ STATUS usuario=joao jogo="Hollow Knight" JOGANDO → ZERADO · evento STATUS_ALTERADO no outbox
+backlog-service-1       | 01:27:08.113 INFO  [demo-05b] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=STATUS_ALTERADO eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0 partição=2 offset=5
+estatisticas-service-1  | 01:27:08.114 INFO  [demo-05b] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=5 key=joao tipo=STATUS_ALTERADO eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0
+estatisticas-service-1  | 01:27:08.114 INFO  [demo-05b] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=5 key=joao tipo=STATUS_ALTERADO eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0
+estatisticas-service-1  | 01:27:08.121 INFO  [demo-05b] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=3 jogando=0 zerados=1 abandonados=0 · 236h pendentes · 27h zeradas
+estatisticas-service-1  | 01:27:08.126 INFO  [demo-05b] ProjecaoConquistas - 🏆 CONQUISTA DESBLOQUEADA joao: Primeiro zerado!
+estatisticas-service-1  | 01:27:20.992 INFO  [demo-05-dup] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=6 key=joao tipo=STATUS_ALTERADO eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0
+estatisticas-service-1  | 01:27:20.992 INFO  [demo-05-dup] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=6 key=joao tipo=STATUS_ALTERADO eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0
+estatisticas-service-1  | 01:27:20.995 INFO  [demo-05-dup] RegistroIdempotencia - ↺ DUPLICADO ignorado consumidor=conquistas eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0
+estatisticas-service-1  | 01:27:20.995 INFO  [demo-05-dup] RegistroIdempotencia - ↺ DUPLICADO ignorado consumidor=estatisticas eventId=7c6be61b-6bef-41a3-9bcc-bbd538060ee0
+backlog-service-1       | 01:27:24.159 INFO  [demo-prep] CatalogoClient - → REST GET catalogo-service /jogos/3
+catalogo-service-1      | 01:27:24.164 INFO  [demo-prep] JogoService - ✘ CACHE MISS jogos::3 → consultando postgres-catalogo
+backlog-service-1       | 01:27:24.169 INFO  [demo-prep] CatalogoClient - ← REST 200 catalogo-service /jogos/3 (9 ms)
+backlog-service-1       | 01:27:24.176 INFO  [demo-prep] BacklogService - ✚ ITEM salvo usuario=joao jogo="Celeste" status=QUERO_JOGAR · evento JOGO_ADICIONADO no outbox
+backlog-service-1       | 01:27:24.211 INFO  [demo-prep] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=JOGO_ADICIONADO eventId=5264a236-049b-49c5-98dd-8fa71f7d24ad partição=2 offset=7
+estatisticas-service-1  | 01:27:24.212 INFO  [demo-prep] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=7 key=joao tipo=JOGO_ADICIONADO eventId=5264a236-049b-49c5-98dd-8fa71f7d24ad
+estatisticas-service-1  | 01:27:24.212 INFO  [demo-prep] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=7 key=joao tipo=JOGO_ADICIONADO eventId=5264a236-049b-49c5-98dd-8fa71f7d24ad
+estatisticas-service-1  | 01:27:24.217 INFO  [demo-prep] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=4 jogando=0 zerados=1 abandonados=0 · 249h pendentes · 27h zeradas
+backlog-service-1       | 01:27:27.634 INFO  [demo-06] BacklogService - ✎ STATUS usuario=joao jogo="Celeste" QUERO_JOGAR → JOGANDO · evento STATUS_ALTERADO no outbox
+backlog-service-1       | 01:27:27.742 INFO  [demo-06] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 partição=2 offset=8
+estatisticas-service-1  | 01:27:27.743 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:27.743 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:29.774 WARN  [demo-06] LogDeRetry - ⟳ RETRY 1 (transitória) consumidor=conquistas eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 próxima em 1000 ms: CannotCreateTransactionException: Could not open JPA EntityManager for transaction
+estatisticas-service-1  | 01:27:29.774 WARN  [demo-06] LogDeRetry - ⟳ RETRY 1 (transitória) consumidor=estatisticas eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 próxima em 1000 ms: CannotCreateTransactionException: Could not open JPA EntityManager for transaction
+estatisticas-service-1  | 01:27:30.780 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:30.780 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:32.782 WARN  [demo-06] LogDeRetry - ⟳ RETRY 2 (transitória) consumidor=conquistas eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 próxima em 2000 ms: CannotCreateTransactionException: Could not open JPA EntityManager for transaction
+estatisticas-service-1  | 01:27:32.782 WARN  [demo-06] LogDeRetry - ⟳ RETRY 2 (transitória) consumidor=estatisticas eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 próxima em 2000 ms: CannotCreateTransactionException: Could not open JPA EntityManager for transaction
+estatisticas-service-1  | 01:27:33.783 WARN  [307b1a69] TratadorDeErros - ✘ 503 banco de estatísticas indisponível: CannotCreateTransactionException
+estatisticas-service-1  | 01:27:34.787 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:34.787 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:35.856 WARN  [280b07e8] DataSourceHealthIndicator - DataSource health check failed
+estatisticas-service-1  | 01:27:36.789 WARN  [demo-06] LogDeRetry - ⟳ RETRY 3 (transitória) consumidor=conquistas eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 próxima em 4000 ms: CannotCreateTransactionException: Could not open JPA EntityManager for transaction
+estatisticas-service-1  | 01:27:36.789 WARN  [demo-06] LogDeRetry - ⟳ RETRY 3 (transitória) consumidor=estatisticas eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2 próxima em 4000 ms: CannotCreateTransactionException: Could not open JPA EntityManager for transaction
+estatisticas-service-1  | 01:27:36.925 WARN  [9c227554] TratadorDeErros - ✘ 503 banco de estatísticas indisponível: CannotCreateTransactionException
+estatisticas-service-1  | 01:27:40.042 WARN  [9851543b] TratadorDeErros - ✘ 503 banco de estatísticas indisponível: CannotCreateTransactionException
+estatisticas-service-1  | 01:27:40.797 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:40.797 INFO  [demo-06] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=8 key=joao tipo=STATUS_ALTERADO eventId=d3b2579b-5e56-40cc-8a5f-badfaac38bb2
+estatisticas-service-1  | 01:27:40.807 INFO  [demo-06] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=3 jogando=1 zerados=1 abandonados=0 · 249h pendentes · 27h zeradas
+estatisticas-service-1  | 01:27:43.230 INFO  [demo-07-lixo] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=9 key=joao tipo=null eventId=?
+estatisticas-service-1  | 01:27:43.230 INFO  [demo-07-lixo] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=9 key=joao tipo=null eventId=?
+estatisticas-service-1  | 01:27:43.231 ERROR [demo-07-lixo] RecuperadorDlt - ☠ DLT backlog.eventos.DLT ← group=conquistas offset=9 partição=2 motivo=EventoInvalidoException: JSON inválido: Unexpected character ('i' (code 105)): was expecting double-quote to start field name
+estatisticas-service-1  | 01:27:43.231 ERROR [demo-07-lixo] RecuperadorDlt - ☠ DLT backlog.eventos.DLT ← group=estatisticas offset=9 partição=2 motivo=EventoInvalidoException: JSON inválido: Unexpected character ('i' (code 105)): was expecting double-quote to start field name
+estatisticas-service-1  | 01:27:45.390 ERROR [demo-07-sem-id] RecuperadorDlt - ☠ DLT backlog.eventos.DLT ← group=conquistas offset=10 partição=2 motivo=EventoInvalidoException: eventId ausente
+estatisticas-service-1  | 01:27:45.390 ERROR [demo-07-sem-id] RecuperadorDlt - ☠ DLT backlog.eventos.DLT ← group=estatisticas offset=10 partição=2 motivo=EventoInvalidoException: eventId ausente
+estatisticas-service-1  | 01:27:45.390 INFO  [demo-07-sem-id] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=10 key=joao tipo=null eventId=?
+estatisticas-service-1  | 01:27:45.390 INFO  [demo-07-sem-id] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=10 key=joao tipo=null eventId=?
+backlog-service-1       | 01:27:48.204 INFO  [demo-07-ok] BacklogService - ✎ STATUS usuario=joao jogo="Hades" QUERO_JOGAR → JOGANDO · evento STATUS_ALTERADO no outbox
+backlog-service-1       | 01:27:48.352 INFO  [demo-07-ok] OutboxPublicador - ⇢ KAFKA PUB backlog.eventos key=joao tipo=STATUS_ALTERADO eventId=d6ba74c4-226c-4210-adb2-573e0aef91da partição=2 offset=11
+estatisticas-service-1  | 01:27:48.353 INFO  [demo-07-ok] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=conquistas partição=2 offset=11 key=joao tipo=STATUS_ALTERADO eventId=d6ba74c4-226c-4210-adb2-573e0aef91da
+estatisticas-service-1  | 01:27:48.353 INFO  [demo-07-ok] InterceptadorCorrelacao - ⇠ KAFKA SUB backlog.eventos group=estatisticas partição=2 offset=11 key=joao tipo=STATUS_ALTERADO eventId=d6ba74c4-226c-4210-adb2-573e0aef91da
+estatisticas-service-1  | 01:27:48.359 INFO  [demo-07-ok] ProjecaoEstatisticas - 📊 ESTATÍSTICAS joao: quero=2 jogando=2 zerados=1 abandonados=0 · 249h pendentes · 27h zeradas
