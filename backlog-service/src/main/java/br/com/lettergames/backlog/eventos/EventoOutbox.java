@@ -58,6 +58,10 @@ public class EventoOutbox implements Persistable<UUID> {
     @Column(name = "falhou_em")
     private Instant falhouEm;
 
+    // Gerada pelo banco no INSERT: define a ordem por chave, já que criado_em pode empatar.
+    @Column(insertable = false, updatable = false)
+    private Long sequencia;
+
     // Id é atribuído (eventId): sem isto o save() faria um SELECT antes de cada INSERT.
     @Transient
     private boolean novo = true;
