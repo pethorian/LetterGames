@@ -17,7 +17,7 @@ Dois problemas clássicos de consistência entre banco e broker:
 ### Produtor: transactional outbox (`backlog-service`)
 
 - `BacklogService` grava o item e a linha em `outbox_eventos` **na mesma transação** (`OutboxRegistrador` exige `Propagation.MANDATORY`). Ou os dois existem, ou nenhum.
-- `OutboxPublicador` roda a cada 500 ms. Trava só a **cabeça de fila de cada chave** (`FOR UPDATE SKIP LOCKED` no Postgres), envia ao Kafka com key = `usuarioId` e headers `correlationId`/`tipo`, e só então marca `publicado_em`. A ordem por usuário se mantém, inclusive com mais de uma instância.
+- `OutboxPublicador` roda a cada 500 ms. Trava só a **cabeça de fila de cada chave**, ordenada pela coluna `sequencia` gerada no INSERT (`FOR UPDATE SKIP LOCKED` no Postgres), envia ao Kafka com key = `usuarioId` e headers `correlationId`/`tipo`, e só então marca `publicado_em`. A ordem por usuário se mantém, inclusive com mais de uma instância.
 - Falha num evento bloqueia só aquela chave no ciclo; os outros usuários seguem. Depois de `backlog.outbox.max-tentativas` (10) falhas não transitórias, o evento é **estacionado** (`falhou_em`), com log `☠ OUTBOX evento estacionado`, e a chave fica retida (ordem vale mais que disponibilidade). Reprocessar é manual (zerar `falhou_em`).
 - Se o processo cair depois do envio e antes de marcar `publicado_em`, o evento é publicado de novo: **at-least-once**, coberto por `OutboxPublicadorTest`.
 

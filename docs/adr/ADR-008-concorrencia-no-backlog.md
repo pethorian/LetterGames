@@ -27,6 +27,6 @@ Cada mudança de status gera um evento com `statusAnterior` e `statusNovo`, e as
 ## Consequências
 
 - ✅ Os eventos de um item formam uma sequência coerente (`AlteracaoConcorrenteTest`, determinístico: falha sem o lock).
-- ✅ A ordem de `criado_em` no outbox acompanha a ordem de commit para o mesmo item.
+- ✅ A ordem do outbox (coluna `sequencia`, atribuída no INSERT) acompanha a ordem de commit para o mesmo item.
 - ⚠️ Lock de linha segura a requisição concorrente enquanto a primeira não commita (transações curtas; a chamada ao catálogo fica fora da transação).
-- ⚠️ Dois eventos da mesma chave com `criado_em` idêntico (resolução de microssegundos) não têm desempate. Improvável com o lock; uma coluna de sequência resolveria.
+- ✅ Empate de `criado_em` entre eventos do mesmo usuário (resolução do relógio) não inverte a ordem: o outbox ordena pela `sequencia` (migration V5), coberto por `OutboxPublicadorTest`. Esse empate apareceu como falha intermitente no CI e foi corrigido.
