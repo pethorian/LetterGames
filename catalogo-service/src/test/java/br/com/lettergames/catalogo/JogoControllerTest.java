@@ -176,7 +176,9 @@ class JogoControllerTest {
                 {"titulo":"X","plataforma":"P\\tC","genero":"RPG","duracaoMediaHoras":30}""";
         String comCr = """
                 {"titulo":"X","plataforma":"PC","genero":"RP\\rG","duracaoMediaHoras":30}""";
-        for (String corpo : new String[] {comQuebra, comTab, comCr}) {
+        String comNel = """
+                {"titulo":"Jogo\\u0085INFO falso","plataforma":"PC","genero":"RPG","duracaoMediaHoras":30}""";
+        for (String corpo : new String[] {comQuebra, comTab, comCr, comNel}) {
             mvc.perform(post("/jogos").contentType(MediaType.APPLICATION_JSON).content(corpo))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.erro", is("VALIDACAO")));
