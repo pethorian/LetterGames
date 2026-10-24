@@ -41,10 +41,14 @@ import java.util.concurrent.TimeoutException;
  * chave dele até o fim do ciclo: os outros usuários seguem.
  *
  * <p>Depois de {@code backlog.outbox.max-tentativas} falhas não transitórias o evento é estacionado
- * ({@code falhou_em}) e a chave <b>continua bloqueada</b> até alguém reprocessá-lo: pular um evento quebraria
- * o estado derivado no consumidor (ex.: STATUS_ALTERADO sem o JOGO_ADICIONADO). Ordem vale mais que
- * disponibilidade de um usuário só. Falhas transitórias (broker fora, timeout) contam tentativa, mas não
- * estacionam: senão uma queda do Kafka estacionaria a cabeça de todos os usuários.
+ * ({@code falhou_em}) e a chave <b>continua bloqueada</b> até alguém reprocessá-lo (zerar {@code falhou_em} e
+ * {@code tentativas}): pular um evento quebraria o estado derivado no consumidor (ex.: STATUS_ALTERADO sem o
+ * JOGO_ADICIONADO). Ordem vale mais que disponibilidade de um usuário só. Falhas transitórias (broker fora,
+ * timeout, interrupção no shutdown) <b>não contam</b> tentativa: senão uma queda do Kafka deixaria a cabeça de
+ * todos os usuários a uma falha de estacionar.
+ *
+ * <p>Erro de banco dentro da rodada (ao marcar ou registrar falha) condena a transação inteira: a rodada para
+ * ali e o que foi enviado nela sai de novo no próximo ciclo (at-least-once).
  */
 @Component
 public class OutboxPublicador {
@@ -102,7 +106,8 @@ public class OutboxPublicador {
                 break;
             }
             publicados += rodada.marcados.size();
-            if (rodada.marcados.isEmpty() || rodada.brokerIndisponivel) {
+            // Rodada sem cabeças = nada mais a fazer; as que falharam já saem da próxima busca.
+            if (rodada.cabecas == 0 || rodada.brokerIndisponivel || rodada.abortada) {
                 break;
             }
         }
@@ -110,17 +115,20 @@ public class OutboxPublicador {
     }
 
     private void publicarRodada(Rodada rodada, Set<String> chavesBloqueadas) {
-        List<EventoOutbox> cabecas = repository.travarCabecasPendentes(Limit.of(TAMANHO_LOTE)).stream()
-                .filter(evento -> !chavesBloqueadas.contains(evento.getChave()))
-                .toList();
+        // Bloqueadas saem na própria query: senão poderiam ocupar o lote inteiro e travar as outras chaves.
+        List<EventoOutbox> cabecas = repository.travarCabecasPendentes(chavesBloqueadas, Limit.of(TAMANHO_LOTE));
+        rodada.cabecas = cabecas.size();
         // No máximo um evento por chave: enviar todos antes de esperar não inverte a ordem de ninguém.
         List<Envio> envios = new ArrayList<>();
         for (EventoOutbox evento : cabecas) {
+            if (rodada.abortada) {
+                break;
+            }
             correlacionar(evento);
             try {
                 envios.add(new Envio(evento, kafkaTemplate.send(registro(evento))));
             } catch (RuntimeException e) {
-                registrarFalha(evento, e, chavesBloqueadas);
+                registrarFalha(evento, e, rodada, chavesBloqueadas);
                 if (transitoria(e)) {
                     rodada.brokerIndisponivel = true; // os próximos esperariam o mesmo max.block.ms à toa
                     break;
@@ -134,17 +142,22 @@ public class OutboxPublicador {
 
     private void concluir(Envio envio, Rodada rodada, Set<String> chavesBloqueadas) {
         EventoOutbox evento = envio.evento();
+        if (rodada.abortada) {
+            return; // transação condenada: o evento segue pendente e sai no próximo ciclo
+        }
         correlacionar(evento);
         try {
             RecordMetadata metadata;
             try {
                 metadata = envio.futuro().get(esperaEnvio.toMillis(), TimeUnit.MILLISECONDS).getRecordMetadata();
             } catch (InterruptedException e) {
+                // Shutdown do agendador: não é culpa do evento, não conta tentativa.
                 Thread.currentThread().interrupt();
-                registrarFalha(evento, e, chavesBloqueadas);
+                chavesBloqueadas.add(evento.getChave());
+                rodada.abortada = true;
                 return;
             } catch (ExecutionException | TimeoutException e) {
-                registrarFalha(evento, e, chavesBloqueadas);
+                registrarFalha(evento, e, rodada, chavesBloqueadas);
                 rodada.brokerIndisponivel |= transitoria(e);
                 return;
             }
@@ -161,21 +174,28 @@ public class OutboxPublicador {
             repository.marcarPublicado(evento.getEventId(), Instant.now());
             rodada.marcados.add(evento.getEventId());
         } catch (RuntimeException e) {
-            // O Kafka já tem o evento, mas ele segue pendente (e cabeça da chave). Bloquear evita reenviá-lo
-            // em todas as rodadas deste ciclo; o reenvio fica para o próximo.
+            // O Kafka já tem o evento, mas ele segue pendente (e cabeça da chave). O erro de banco condena a
+            // transação da rodada (o repositório é @Transactional): para aqui e o reenvio fica para o próximo ciclo.
             chavesBloqueadas.add(evento.getChave());
+            rodada.abortada = true;
             log.warn("⟳ OUTBOX publicado mas não marcado eventId={}: {} — sai de novo no próximo ciclo",
                     evento.getEventId(), motivo(e));
         }
     }
 
-    private void registrarFalha(EventoOutbox evento, Exception e, Set<String> chavesBloqueadas) {
+    private void registrarFalha(EventoOutbox evento, Exception e, Rodada rodada, Set<String> chavesBloqueadas) {
         chavesBloqueadas.add(evento.getChave());
+        if (transitoria(e)) {
+            log.warn("⟳ OUTBOX broker indisponível ao publicar eventId={}: {} — não conta tentativa, sai no próximo ciclo",
+                    evento.getEventId(), motivo(e));
+            return;
+        }
         int tentativas = evento.getTentativas() + 1; // linha travada nesta transação: o valor lido é o atual
-        boolean estacionar = !transitoria(e) && tentativas >= maxTentativas;
+        boolean estacionar = tentativas >= maxTentativas;
         try {
             repository.registrarFalha(evento.getEventId(), estacionar ? Instant.now() : null);
         } catch (RuntimeException erroAoSalvar) {
+            rodada.abortada = true; // transação condenada, como em marcarPublicado
             log.warn("⟳ OUTBOX não conseguiu registrar a tentativa do eventId={}: {}", evento.getEventId(),
                     erroAoSalvar.getMessage());
             return;
@@ -184,7 +204,7 @@ public class OutboxPublicador {
             log.error("☠ OUTBOX evento estacionado eventId={} após {} tentativas: {}", evento.getEventId(),
                     tentativas, motivo(e));
             log.warn("⏸ OUTBOX chave={} bloqueada: os eventos seguintes desse usuário aguardam o eventId={} "
-                    + "ser reprocessado (limpar falhou_em)", evento.getChave(), evento.getEventId());
+                    + "ser reprocessado (zerar falhou_em e tentativas)", evento.getChave(), evento.getEventId());
         } else {
             log.warn("⟳ OUTBOX falha ao publicar eventId={} (tentativa {}/{}): {} — nova tentativa no próximo ciclo",
                     evento.getEventId(), tentativas, maxTentativas, motivo(e));
@@ -208,10 +228,11 @@ public class OutboxPublicador {
         }
     }
 
-    /** Broker fora, sem líder, timeout: tende a passar sozinho e afeta todas as chaves igualmente. */
+    /** Broker fora, sem líder, timeout, interrupção: tende a passar sozinho e não é culpa do evento. */
     static boolean transitoria(Throwable e) {
         for (Throwable causa = e; causa != null && causa != causa.getCause(); causa = causa.getCause()) {
-            if (causa instanceof RetriableException || causa instanceof TimeoutException) {
+            if (causa instanceof RetriableException || causa instanceof TimeoutException
+                    || causa instanceof InterruptedException) {
                 return true;
             }
         }
@@ -228,6 +249,9 @@ public class OutboxPublicador {
 
     private static final class Rodada {
         final List<UUID> marcados = new ArrayList<>();
+        int cabecas;
         boolean brokerIndisponivel;
+        /** Erro de banco na rodada: a transação vai fazer rollback, não adianta seguir. */
+        boolean abortada;
     }
 }

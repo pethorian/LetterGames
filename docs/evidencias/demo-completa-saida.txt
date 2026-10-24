@@ -4,7 +4,7 @@
 ▶ Cadastrando dois jogos novos (terminal 1: INSERT; terminal 4: nada no Redis)
 $ POST http://127.0.0.1:8081/jogos [X-Correlation-Id: demo-01a]
   corpo: {"titulo":"Outer Wilds","plataforma":"PC","genero":"Aventura","duracaoMediaHoras":22}
-  ← HTTP 201 (0.194408s)
+  ← HTTP 201 (0.198849s)
     {
       "id": 11,
       "titulo": "Outer Wilds",
@@ -14,7 +14,7 @@ $ POST http://127.0.0.1:8081/jogos [X-Correlation-Id: demo-01a]
     }
 $ POST http://127.0.0.1:8081/jogos [X-Correlation-Id: demo-01b]
   corpo: {"titulo":"Hollow Knight: Silksong","plataforma":"Switch","genero":"Metroidvania","duracaoMediaHoras":40}
-  ← HTTP 201 (0.113050s)
+  ← HTTP 201 (0.012773s)
     {
       "id": 12,
       "titulo": "Hollow Knight: Silksong",
@@ -25,7 +25,7 @@ $ POST http://127.0.0.1:8081/jogos [X-Correlation-Id: demo-01b]
 
 ▶ Listando os jogos de PC (listagem não é cacheada — ADR-004)
 $ GET http://127.0.0.1:8081/jogos?plataforma=PC [X-Correlation-Id: demo-01c]
-  ← HTTP 200 (0.152334s)
+  ← HTTP 200 (0.132882s)
     [
       {
         "id": 1,
@@ -84,7 +84,7 @@ $ GET http://127.0.0.1:8081/jogos?plataforma=PC [X-Correlation-Id: demo-01c]
 ▶ POST no backlog: valida o jogo no catálogo (REST) e grava item + evento no outbox (mesma transação)
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-02]
   corpo: {"jogoId":1}
-  ← HTTP 201 (1.070536s)
+  ← HTTP 201 (0.812602s)
     {
       "id": 1,
       "usuarioId": "joao",
@@ -92,13 +92,13 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-02]
       "titulo": "Hollow Knight",
       "duracaoMediaHoras": 27,
       "status": "QUERO_JOGAR",
-      "criadoEm": "2026-10-24T01:26:27.941247350Z",
-      "atualizadoEm": "2026-10-24T01:26:27.941247350Z"
+      "criadoEm": "2026-10-24T01:53:22.542116394Z",
+      "atualizadoEm": "2026-10-24T01:53:22.542116394Z"
     }
 
 ▶ O publicador do outbox envia o evento ao Kafka e o estatisticas-service consome (aguardando 2s)
 $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-02b]
-  ← HTTP 200 (0.070442s)
+  ← HTTP 200 (0.062308s)
     {
       "usuarioId": "joao",
       "total": 1,
@@ -117,7 +117,7 @@ $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-0
 
 ▶ 1º GET: CACHE MISS → banco → SET no Redis com TTL de 10 min (terminais 1 e 4)
 $ GET http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03a]
-  ← HTTP 200 (0.012004s)
+  ← HTTP 200 (0.011417s)
     {
       "id": 3,
       "titulo": "Celeste",
@@ -128,7 +128,7 @@ $ GET http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03a]
 
 ▶ 2º GET: CACHE HIT, nenhum SQL no terminal 1
 $ GET http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03b]
-  ← HTTP 200 (0.011245s)
+  ← HTTP 200 (0.010049s)
     {
       "id": 3,
       "titulo": "Celeste",
@@ -142,7 +142,7 @@ $ GET http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03b]
 ▶ PUT: atualiza o jogo e INVALIDA a chave (DEL no terminal 4). Evict, não put (ADR-004)
 $ PUT http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03c]
   corpo: {"titulo":"Celeste","plataforma":"Switch","genero":"Plataforma","duracaoMediaHoras":13}
-  ← HTTP 200 (0.033406s)
+  ← HTTP 200 (0.025127s)
     {
       "id": 3,
       "titulo": "Celeste",
@@ -153,7 +153,7 @@ $ PUT http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03c]
 
 ▶ GET depois do PUT: MISS de novo, devolvendo o valor novo
 $ GET http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03d]
-  ← HTTP 200 (0.010731s)
+  ← HTTP 200 (0.009519s)
     {
       "id": 3,
       "titulo": "Celeste",
@@ -171,42 +171,42 @@ $ GET http://127.0.0.1:8081/jogos/3 [X-Correlation-Id: demo-03d]
 ▶ 6 tentativas de adicionar jogos: primeiro RETRY (terminal 2), depois o breaker ABRE e responde 503 na hora
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-4]
   corpo: {"jogoId":4}
-  ← HTTP 503 (3.635678s)
+  ← HTTP 503 (3.627855s)
     {
       "erro": "CATALOGO_INDISPONIVEL",
       "mensagem": "Catálogo indisponível no momento, tente novamente em instantes"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-5]
   corpo: {"jogoId":5}
-  ← HTTP 503 (1.220141s)
+  ← HTTP 503 (1.217706s)
     {
       "erro": "CATALOGO_INDISPONIVEL",
       "mensagem": "Catálogo indisponível no momento, tente novamente em instantes"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-6]
   corpo: {"jogoId":6}
-  ← HTTP 503 (0.009844s)
+  ← HTTP 503 (0.009416s)
     {
       "erro": "CATALOGO_INDISPONIVEL",
       "mensagem": "Catálogo indisponível no momento, tente novamente em instantes"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-7]
   corpo: {"jogoId":7}
-  ← HTTP 503 (0.008537s)
+  ← HTTP 503 (0.009934s)
     {
       "erro": "CATALOGO_INDISPONIVEL",
       "mensagem": "Catálogo indisponível no momento, tente novamente em instantes"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-8]
   corpo: {"jogoId":8}
-  ← HTTP 503 (0.008856s)
+  ← HTTP 503 (0.008420s)
     {
       "erro": "CATALOGO_INDISPONIVEL",
       "mensagem": "Catálogo indisponível no momento, tente novamente em instantes"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-9]
   corpo: {"jogoId":9}
-  ← HTTP 503 (0.012414s)
+  ← HTTP 503 (0.008807s)
     {
       "erro": "CATALOGO_INDISPONIVEL",
       "mensagem": "Catálogo indisponível no momento, tente novamente em instantes"
@@ -232,8 +232,8 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-9]
 ▶ Religando o catálogo; depois de 15 s o breaker vai a HALF_OPEN e, com sucesso, volta a CLOSED
  Container lettergamestest-postgres-catalogo-1 Waiting 
  Container lettergamestest-redis-1 Waiting 
- Container lettergamestest-postgres-catalogo-1 Healthy 
  Container lettergamestest-redis-1 Healthy 
+ Container lettergamestest-postgres-catalogo-1 Healthy 
  Container lettergamestest-catalogo-service-1 Starting 
  Container lettergamestest-catalogo-service-1 Started 
   aguardando catalogo-service ficar saudável...
@@ -242,7 +242,7 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-9]
   HALF_OPEN libera 3 chamadas de teste; se derem certo, o breaker fecha (terminal 2: HALF_OPEN → CLOSED)
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok-4]
   corpo: {"jogoId":4}
-  ← HTTP 201 (0.695406s)
+  ← HTTP 201 (0.539178s)
     {
       "id": 2,
       "usuarioId": "joao",
@@ -250,12 +250,12 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok
       "titulo": "Elden Ring",
       "duracaoMediaHoras": 98,
       "status": "QUERO_JOGAR",
-      "criadoEm": "2026-10-24T01:27:05.333330417Z",
-      "atualizadoEm": "2026-10-24T01:27:05.333330417Z"
+      "criadoEm": "2026-10-24T01:53:59.469837668Z",
+      "atualizadoEm": "2026-10-24T01:53:59.469837668Z"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok-5]
   corpo: {"jogoId":5}
-  ← HTTP 201 (0.035034s)
+  ← HTTP 201 (0.025859s)
     {
       "id": 3,
       "usuarioId": "joao",
@@ -263,12 +263,12 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok
       "titulo": "Hades",
       "duracaoMediaHoras": 43,
       "status": "QUERO_JOGAR",
-      "criadoEm": "2026-10-24T01:27:05.567993483Z",
-      "atualizadoEm": "2026-10-24T01:27:05.567993483Z"
+      "criadoEm": "2026-10-24T01:53:59.684014137Z",
+      "atualizadoEm": "2026-10-24T01:53:59.684014137Z"
     }
 $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok-6]
   corpo: {"jogoId":6}
-  ← HTTP 201 (0.029980s)
+  ← HTTP 201 (0.028865s)
     {
       "id": 4,
       "usuarioId": "joao",
@@ -276,8 +276,8 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok
       "titulo": "Stardew Valley",
       "duracaoMediaHoras": 95,
       "status": "QUERO_JOGAR",
-      "criadoEm": "2026-10-24T01:27:05.795592123Z",
-      "atualizadoEm": "2026-10-24T01:27:05.795592123Z"
+      "criadoEm": "2026-10-24T01:53:59.902722110Z",
+      "atualizadoEm": "2026-10-24T01:53:59.902722110Z"
     }
 
   CENA 5 · joao zera o jogo 1  
@@ -286,7 +286,7 @@ $ POST http://127.0.0.1:8082/usuarios/joao/backlog [X-Correlation-Id: demo-04-ok
 ▶ QUERO_JOGAR → JOGANDO
 $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/1 [X-Correlation-Id: demo-05a]
   corpo: {"status":"JOGANDO"}
-  ← HTTP 200 (0.045483s)
+  ← HTTP 200 (0.030697s)
     {
       "id": 1,
       "usuarioId": "joao",
@@ -294,14 +294,14 @@ $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/1 [X-Correlation-Id: demo-05
       "titulo": "Hollow Knight",
       "duracaoMediaHoras": 27,
       "status": "JOGANDO",
-      "criadoEm": "2026-10-24T01:26:27.941247Z",
-      "atualizadoEm": "2026-10-24T01:27:06.360141711Z"
+      "criadoEm": "2026-10-24T01:53:22.542116Z",
+      "atualizadoEm": "2026-10-24T01:54:00.416277541Z"
     }
 
 ▶ JOGANDO → ZERADO (terminal 3: os groups 'estatisticas' e 'conquistas' recebem o mesmo evento)
 $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/1 [X-Correlation-Id: demo-05b]
   corpo: {"status":"ZERADO"}
-  ← HTTP 200 (0.018030s)
+  ← HTTP 200 (0.015632s)
     {
       "id": 1,
       "usuarioId": "joao",
@@ -309,11 +309,11 @@ $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/1 [X-Correlation-Id: demo-05
       "titulo": "Hollow Knight",
       "duracaoMediaHoras": 27,
       "status": "ZERADO",
-      "criadoEm": "2026-10-24T01:26:27.941247Z",
-      "atualizadoEm": "2026-10-24T01:27:07.618044150Z"
+      "criadoEm": "2026-10-24T01:53:22.542116Z",
+      "atualizadoEm": "2026-10-24T01:54:01.664118538Z"
     }
 $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-05c]
-  ← HTTP 200 (0.008328s)
+  ← HTTP 200 (0.008217s)
     {
       "usuarioId": "joao",
       "total": 4,
@@ -328,12 +328,12 @@ $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-0
       "percentualZerado": 25
     }
 $ GET http://127.0.0.1:8083/usuarios/joao/conquistas [X-Correlation-Id: demo-05d]
-  ← HTTP 200 (0.067899s)
+  ← HTTP 200 (0.063088s)
     [
       {
         "codigo": "PRIMEIRO_ZERADO",
         "descricao": "Primeiro zerado!",
-        "desbloqueadaEm": "2026-10-24T01:27:08.120963Z"
+        "desbloqueadaEm": "2026-10-24T01:54:01.800751Z"
       }
     ]
 
@@ -341,10 +341,10 @@ $ GET http://127.0.0.1:8083/usuarios/joao/conquistas [X-Correlation-Id: demo-05d
 
 ▶ Lendo do tópico o último evento ZERADO de joao
     {
-      "eventId": "7c6be61b-6bef-41a3-9bcc-bbd538060ee0",
+      "eventId": "9ae2adfd-76e2-4d0f-ad7c-79113833aba0",
       "tipo": "STATUS_ALTERADO",
       "versao": 1,
-      "ocorridoEm": "2026-10-24T01:27:07.618109186Z",
+      "ocorridoEm": "2026-10-24T01:54:01.664154709Z",
       "usuarioId": "joao",
       "itemId": 1,
       "jogoId": 1,
@@ -356,7 +356,7 @@ $ GET http://127.0.0.1:8083/usuarios/joao/conquistas [X-Correlation-Id: demo-05d
 
 ▶ Estatísticas ANTES da reentrega
 $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-05e]
-  ← HTTP 200 (0.008605s)
+  ← HTTP 200 (0.007409s)
     {
       "usuarioId": "joao",
       "total": 4,
@@ -376,7 +376,7 @@ $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-0
 
 ▶ Estatísticas DEPOIS da reentrega
 $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-05f]
-  ← HTTP 200 (0.008230s)
+  ← HTTP 200 (0.007792s)
     {
       "usuarioId": "joao",
       "total": 4,
@@ -401,7 +401,7 @@ $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-0
 ▶ Alterando um status no backlog (o backlog não percebe nada: só publica)
 $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/5 [X-Correlation-Id: demo-06]
   corpo: {"status":"JOGANDO"}
-  ← HTTP 200 (0.015174s)
+  ← HTTP 200 (0.013499s)
     {
       "id": 5,
       "usuarioId": "joao",
@@ -409,8 +409,8 @@ $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/5 [X-Correlation-Id: demo-06
       "titulo": "Celeste",
       "duracaoMediaHoras": 13,
       "status": "JOGANDO",
-      "criadoEm": "2026-10-24T01:27:24.170259Z",
-      "atualizadoEm": "2026-10-24T01:27:27.633485435Z"
+      "criadoEm": "2026-10-24T01:54:17.729041Z",
+      "atualizadoEm": "2026-10-24T01:54:21.113070492Z"
     }
   Terminal 3: ⟳ RETRY 1 (transitória) próxima em 1000 ms, RETRY 2 ... 2000 ms (segura a partição, não descarta)
 
@@ -419,7 +419,7 @@ $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/5 [X-Correlation-Id: demo-06
  Container lettergamestest-postgres-estatisticas-1 Started 
   aguardando a próxima tentativa do consumidor processar o evento...
 $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-06b]
-  ← HTTP 200 (0.007925s)
+  ← HTTP 200 (0.006910s)
     {
       "usuarioId": "joao",
       "total": 5,
@@ -443,7 +443,7 @@ $ GET http://127.0.0.1:8083/usuarios/joao/estatisticas [X-Correlation-Id: demo-0
 ▶ Um evento válido do mesmo usuário passa normalmente (a partição não travou)
 $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/3 [X-Correlation-Id: demo-07-ok]
   corpo: {"status":"JOGANDO"}
-  ← HTTP 200 (0.016489s)
+  ← HTTP 200 (0.013328s)
     {
       "id": 3,
       "usuarioId": "joao",
@@ -451,8 +451,8 @@ $ PATCH http://127.0.0.1:8082/usuarios/joao/backlog/3 [X-Correlation-Id: demo-07
       "titulo": "Hades",
       "duracaoMediaHoras": 43,
       "status": "JOGANDO",
-      "criadoEm": "2026-10-24T01:27:05.567993Z",
-      "atualizadoEm": "2026-10-24T01:27:48.203935330Z"
+      "criadoEm": "2026-10-24T01:53:59.684014Z",
+      "atualizadoEm": "2026-10-24T01:54:42.658867283Z"
     }
 
 ▶ Conteúdo da DLT (também no Kafka UI: http://localhost:8080)

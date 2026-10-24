@@ -188,7 +188,7 @@ class OutboxPublicadorTest {
     }
 
     @Test
-    void falhaTransitoriaContaTentativaMasNaoEstaciona() {
+    void falhaTransitoriaNaoContaTentativaNemEstaciona() {
         UUID evento = registrar("zeca", TipoEvento.JOGO_ADICIONADO, null, StatusBacklog.QUERO_JOGAR, "demo-09");
         KafkaTemplate<String, String> kafkaFora = kafkaFalso(
                 registro -> new org.apache.kafka.common.errors.TimeoutException("metadata expirou"));
@@ -199,8 +199,49 @@ class OutboxPublicadorTest {
         }
 
         EventoOutbox linha = repository.findById(evento).orElseThrow();
-        assertThat(linha.getTentativas()).isEqualTo(3);
+        assertThat(linha.getTentativas()).as("queda do broker não é culpa do evento").isZero();
         assertThat(linha.getFalhouEm()).as("queda do broker não estaciona ninguém").isNull();
+    }
+
+    @Test
+    void quedaLongaDoBrokerNaoAproximaOEventoDeEstacionar() {
+        UUID evento = registrar("vera", TipoEvento.JOGO_ADICIONADO, null, StatusBacklog.QUERO_JOGAR, "demo-12");
+        OutboxPublicador semKafka = new OutboxPublicador(repository, kafkaFalso(
+                registro -> new org.apache.kafka.common.errors.TimeoutException("metadata expirou")), transacao, 2);
+        for (int i = 0; i < 5; i++) {
+            semKafka.publicarPendentes();
+        }
+
+        OutboxPublicador rejeitando = new OutboxPublicador(repository, kafkaFalso(
+                registro -> new RecordTooLargeException("registro rejeitado pelo broker")), transacao, 2);
+        rejeitando.publicarPendentes();
+
+        EventoOutbox linha = repository.findById(evento).orElseThrow();
+        assertThat(linha.getTentativas()).as("só a falha permanente conta").isEqualTo(1);
+        assertThat(linha.getFalhouEm()).as("uma falha permanente de 2 permitidas não estaciona").isNull();
+    }
+
+    @Test
+    void interrupcaoNoShutdownNaoContaComoFalhaDoEvento() {
+        UUID evento = registrar("wagner", TipoEvento.JOGO_ADICIONADO, null, StatusBacklog.QUERO_JOGAR, "demo-13");
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, String> nuncaResponde = mock(KafkaTemplate.class);
+        when(nuncaResponde.send(any(ProducerRecord.class))).thenAnswer(invocacao -> {
+            Thread.currentThread().interrupt(); // o agendador interrompe a tarefa enquanto o envio está em voo
+            return new CompletableFuture<SendResult<String, String>>();
+        });
+        OutboxPublicador publicadorInterrompido = new OutboxPublicador(repository, nuncaResponde, transacao, 1);
+
+        try {
+            assertThat(publicadorInterrompido.publicarPendentes()).isZero();
+        } finally {
+            Thread.interrupted(); // limpa a flag para não vazar para os outros testes
+        }
+
+        EventoOutbox linha = repository.findById(evento).orElseThrow();
+        assertThat(linha.getPublicadoEm()).isNull();
+        assertThat(linha.getTentativas()).isZero();
+        assertThat(linha.getFalhouEm()).as("com max-tentativas=1, contar a interrupção estacionaria o evento").isNull();
     }
 
     /** Prova o at-least-once que justifica o consumidor idempotente (ADR-003). */

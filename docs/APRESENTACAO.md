@@ -129,7 +129,7 @@ Aba extra, fora da grade: Kafka UI em `http://localhost:8080`, para mostrar a DL
 - **Fallback:**
 > "Se o Redis cair, o `CacheErrorHandler` loga e vai direto ao banco. O cache é otimização, nunca dependência. Temos teste disso com o container do Redis parado de verdade."
 - **Circuit breaker no backlog → catálogo** (ADR-005):
-> "Timeout de 2 segundos e 3 retries com backoff, só para erro de rede ou 5xx; 404 e outros 4xx não se repetem. Com 50% de falha em 10 chamadas, o breaker abre por 15 segundos e respondemos 503 em milissegundos, sem pendurar threads. **Não** adicionamos o jogo sem validar: preferimos recusar a gravar lixo."
+> "Timeout de 1 segundo para conectar e 2 para ler, e até 3 tentativas com backoff, só para erro de rede ou 5xx; 404 e outros 4xx não se repetem. Com 50% de falha em 10 chamadas, o breaker abre por 15 segundos e respondemos 503 em milissegundos, sem pendurar threads. **Não** adicionamos o jogo sem validar: preferimos recusar a gravar lixo."
 
 **[15:30] Testes e contratos (1,5 min)** · mostrar os dois pacts em `shared-contracts/pacts/` e a saída do `mvnw verify`
 > "Temos **dois contratos executáveis**. No REST, o backlog é o consumidor: o teste dele descreve o que espera de `GET /jogos/{id}` e gera o pact, e o catálogo roda esse arquivo contra a API real. No evento Kafka é o contrário: as estatísticas são o consumidor e o backlog prova que o JSON que ele grava no outbox bate com o contrato. Renomeou um campo de qualquer lado, o build quebra antes da produção. O CI ainda confere se o pact gerado é igual ao commitado." (ADR-006)
@@ -180,7 +180,7 @@ Cada cena é **1 script** no terminal 6 (ou `./scripts/demo/demo-completa.sh`, q
 | Snapshot não é dado duplicado? | É, de propósito: troca consistência forte por disponibilidade. O dono do dado continua sendo o catálogo. |
 | E o serviço de usuário? Qualquer um mexe no backlog de qualquer um? | Sim, é limitação de escopo declarada no ADR-001. Em produção o `usuarioId` viria do token (JWT), não do path. |
 | Dois PATCH ao mesmo tempo? | Lock pessimista na linha: o segundo espera e parte do estado já commitado; conflito de versão vira 409 (ADR-008). |
-| Como escalaria? | Catálogo: réplicas + Redis (stateless). Estatísticas: até 3 instâncias por group (3 partições). Backlog: várias instâncias, porque o outbox trava só a cabeça de fila de cada usuário (`SKIP LOCKED`). |
+| Como escalaria? | Catálogo: réplicas + Redis (stateless). Estatísticas: até 3 consumidores por group no total (3 partições); com `concurrency: 3`, uma instância já ocupa as 3, então escalar exige mais partições. Backlog: várias instâncias, porque o outbox trava só a cabeça de fila de cada usuário (`SKIP LOCKED`). |
 
 ### Mensageria (B)
 | Pergunta | Resposta curta |
@@ -189,8 +189,8 @@ Cada cena é **1 script** no terminal 6 (ou `./scripts/demo/demo-completa.sh`, q
 | E se cair antes de gravar? | A transação não commitou, nada foi gravado. A reentrega processa normalmente. |
 | E se o backlog cair depois de publicar e antes de marcar no outbox? | Publica de novo no próximo ciclo: at-least-once. O consumidor deduplica. Temos teste que mostra o mesmo eventId duas vezes no tópico. |
 | Por que não exactly-once do Kafka (transações)? | O EOS do Kafka cobre só Kafka → Kafka. Nosso efeito é num Postgres, então a idempotência tem que estar no consumidor de qualquer jeito. |
-| Como garante a ordem? | Chave = `usuarioId` → mesma partição; o outbox publica só a cabeça de fila de cada usuário; 1 consumidor por partição no group; retry bloqueante. |
-| Um evento que nunca publica trava tudo? | Não: trava só aquele usuário. Depois de 10 falhas o evento é estacionado e logado como `☠ OUTBOX`. Os outros usuários seguem. |
+| Como garante a ordem? | Chave = `usuarioId` → mesma partição; o outbox publica só a cabeça de fila de cada usuário, na ordem de gravação; 1 consumidor por partição no group; retry bloqueante. Para o mesmo item a ordem de gravação é a de commit (lock de linha); entre itens diferentes do mesmo usuário pode não ser, e não precisa: os contadores são comutativos. |
+| Um evento que nunca publica trava tudo? | Não: trava só aquele usuário. Depois de 10 falhas não transitórias (queda do broker não conta) o evento é estacionado e logado como `☠ OUTBOX`. Os outros usuários seguem. |
 | O que faz com a DLT? | Hoje: inspeção no Kafka UI e republicação após a correção (a idempotência protege contra reprocessar). Próximo passo: alerta quando a DLT tiver mensagens. |
 | Por que a mesma mensagem aparece duas vezes na DLT? | Uma cópia por consumer group; o header `kafka_dlt-original-consumer-group` e o log dizem qual. |
 | Evento com `versao`, para quê? | Evolução do schema: o consumidor sabe tratar v1 e v2 juntos durante a migração. O contrato de mensagem quebra se o formato mudar sem combinar. |

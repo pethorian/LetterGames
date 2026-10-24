@@ -72,7 +72,7 @@ Perfil de execução: **A** (tudo em Docker) · Fallbacks usados: H2 (modo Postg
 - **REST:** `backlog-service/.../catalogo/CatalogoClient.java`, com `@Retry` + `@CircuitBreaker`.
   - Timeouts de 1 s e 2 s; config em `application.yml` (`resilience4j.*`); logs em `ResilienciaCatalogoLogs.java`.
   - 404 → 422 e outros 4xx → 502, ambos sem retry e fora do breaker.
-- **Produtor:** isolamento por chave, estacionamento depois de 10 falhas e espera maior que `delivery.timeout.ms` (`OutboxPublicador.java`).
+- **Produtor:** isolamento por chave, estacionamento depois de 10 falhas não transitórias (queda do broker e interrupção não contam) e espera maior que `delivery.timeout.ms` (`OutboxPublicador.java`).
 - **Consumidor:** `estatisticas-service/.../consumo/KafkaConfig.java` com `ClassificadorFalhas`, `LogDeRetry` e `RecuperadorDlt`.
   - Inválido → DLT sem retry; transitório → backoff até 10 min segurando a partição; processamento → 4 tentativas → DLT `backlog.eventos.DLT`.
 - **Testes de falha transitória × permanente, nos dois lados:**
@@ -95,8 +95,8 @@ Perfil de execução: **A** (tudo em Docker) · Fallbacks usados: H2 (modo Postg
   - **Mensagem:** `estatisticas-service-backlog-service.json` (Pact V4), gerado por `BacklogEventoPactConsumerTest` (estatísticas) e verificado por `BacklogEventoPactProviderTest` (backlog, com o payload real gravado no outbox).
   - Ordem do reactor Maven: consumidor antes do provedor (`pom.xml`).
   - O CI falha se o pact regenerado diferir do commitado (`.github/workflows/ci.yml`).
-- **`mvn verify` verde sem Docker (perfil B):** 158 testes. Usa H2, `@EmbeddedKafka`, cache em memória e `HttpServer` do JDK como catálogo falso.
-- **Perfil A:** `./mvnw verify -Pperfil-a` soma os testes `@Tag("docker")` com Testcontainers, 163 no total.
+- **`mvn verify` verde sem Docker (perfil B):** 160 testes. Usa H2, `@EmbeddedKafka`, cache em memória e `HttpServer` do JDK como catálogo falso.
+- **Perfil A:** `./mvnw verify -Pperfil-a` soma os testes `@Tag("docker")` com Testcontainers, 165 no total.
 - **CI:** jobs separados para os perfis B e A em todo PR (`.github/workflows/ci.yml`). Saída local em [docs/evidencias/mvnw-verify.txt](docs/evidencias/mvnw-verify.txt).
 - **ADRs:** [ADR-006](docs/adr/ADR-006-contract-testing-pact.md) e [ADR-007](docs/adr/ADR-007-perfis-de-execucao.md).
 
@@ -111,7 +111,7 @@ Perfil de execução: **A** (tudo em Docker) · Fallbacks usados: H2 (modo Postg
 - Como usamos IA e o que validamos à mão: [docs/ia/registro-uso-ia.md](docs/ia/registro-uso-ia.md).
 - Em resumo:
   - a IA (Claude Code) planejou, implementou por serviço a partir de especificações nossas e revisou;
-  - a **revisão** (um agente revisor de código e um auditor de testes, ambos só leitura) encontrou defeitos reais que os testes da primeira versão não pegavam, como lost update, evento indo para a DLT com o banco fora e documentação contradizendo o código;
+  - a **revisão** (um agente revisor de código e um auditor de testes, ambos só leitura) encontrou defeitos reais que os testes da primeira versão não pegavam (e uma segunda revisão, depois das correções, ainda achou dois), como lost update, evento indo para a DLT com o banco fora e documentação contradizendo o código;
   - o CI e o perfil A pegaram dois testes dependentes de ordem e um bug real de ordenação no outbox.
 - O registro diz também **o que não delegaríamos de novo** e o que conferimos manualmente: a demo contra infraestrutura real e a leitura dos ADRs contra o código.
 
@@ -137,12 +137,13 @@ O grupo tem 3 pessoas, então os opcionais não são obrigatórios. Entregamos:
 
 ## Observações honestas sobre processo
 
-- O projeto foi concentrado em poucos dias antes da banca, não em semanas. Para deixar o processo auditável, cada demanda virou branch e PR com CI, e são 12 PRs para a `develop`:
+- O projeto foi concentrado em poucos dias antes da banca, não em semanas. Para deixar o processo auditável, cada demanda virou branch e PR com CI, e são 13 PRs para a `develop`:
   - #1 fundação;
   - #2 a #5 serviços e demo;
   - #6 CI do perfil A;
   - #7 a #9 correções da revisão;
   - #10 e #11 ajustes encontrados ao validar a demo e o perfil A;
-  - #12 documentação final e evidências.
+  - #12 documentação final e evidências;
+  - #13 correções da revisão final (contagem de tentativas do outbox, interrupção, controles Unicode).
 - Os commits são pequenos, em Conventional Commits, e os testes estão em commits `test(...)` próprios.
 - Sem autenticação: `usuarioId` vem do path (limitação declarada no ADR-001).
