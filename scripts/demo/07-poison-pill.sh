@@ -12,7 +12,7 @@ passo "Publicando no tópico um JSON inválido e um evento sem eventId, com a ch
 printf 'correlationId:demo-07-lixo\t%s\t%s\n' "$USUARIO" '{isto nao e json' | publicar_cru
 printf 'correlationId:demo-07-sem-id\t%s\t{"tipo":"JOGO_ADICIONADO","usuarioId":"%s","statusNovo":"QUERO_JOGAR"}\n' \
   "$USUARIO" "$USUARIO" | publicar_cru
-info "Terminal 3: '☠ DLT' imediatamente, sem ⟳ RETRY"
+info "Terminal 3: '☠ DLT ... group=estatisticas' e 'group=conquistas' imediatamente, sem ⟳ RETRY"
 sleep 2
 
 passo "Um evento válido do mesmo usuário passa normalmente (a partição não travou)"
