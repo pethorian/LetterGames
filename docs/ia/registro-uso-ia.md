@@ -47,9 +47,47 @@ Evidência do critério 8. O valor deste registro está nos casos em que **a IA 
 
 **João Pedro Guimarães dos Santos Santana (A — Arquiteto + Infra/Demo):** no geral, não tivemos problema com o uso da IA. Antes de pedir qualquer código, eu já tinha o escopo definido: como queria o sistema e como cada parte ia funcionar. Com isso, a IA trabalhou a partir de uma especificação nossa em vez de decidir o desenho sozinha, e a implementação andou rápido. Os erros da tabela acima apareceram no detalhe, não no desenho, e foram pegos pela revisão, pelo CI e pela demo.
 
+**Gabriel Lustosa Queiroz (C — Dados/Cache + Testes/Contrato):** nesta sessão final, fui eu quem deu as ordens e o escopo. A IA executou o setup, a demo e os artefatos; eu conferi rodando a demo no meu PC e gravando a tela. O que eu levo para a banca é o que os logs mostram, não o que o desenho promete: com o Redis fora, o `GET` continua 200 pelo banco; com o catálogo fora, o breaker responde 503 em ~1 ms e o backlog não pendura. Foi isso que me deu confiança para defender o cache como otimização, não como dependência.
+
 ## Reflexão
 
 - **Onde a IA acelerou:** boilerplate de Spring, Kafka e Resilience4j; testes com EmbeddedKafka e Pact; scripts de demo; documentação. Três serviços com mais de 150 testes não caberiam no prazo sem isso.
 - **Onde atrapalhou:** a primeira versão "passava em tudo" e mesmo assim tinha três defeitos de consistência sérios (itens 4, 5 e 6) e uma documentação que contradizia o código (item 10). Testes escritos pela mesma IA que escreveu o código tendem a confirmar o desenho, não a desafiá-lo.
 - **O que não delegaríamos de novo sem revisão independente:** concorrência e garantias de entrega. A revisão de código e o perfil A no CI pegaram o que os testes iniciais não pegavam.
 - **O que mantemos:** especificação escrita por nós antes do código, revisão por um agente separado e só de leitura, e a regra de que **toda afirmação de documento precisa de um teste ou de uma linha de log que a prove**.
+
+---
+
+## Adendo — sessão de 26/10/2026 (Gabriel Lustosa Queiroz, C)
+
+> **Escopo e comando:** esta sessão foi pedida e dirigida por **Gabriel Lustosa Queiroz** (Pessoa C — Dados/Cache + Testes/Contrato). As ordens, o recorte e a decisão do que entraria no repositório foram dele; a IA executou a análise, o ambiente, a validação e os artefatos, reportando cada passo. Nenhuma linha de código dos três serviços foi alterada.
+
+### O que foi feito
+
+| # | Ordem de Gabriel | Execução | Evidência |
+|---|---|---|---|
+| 1 | Explicar o cache e as decisões arquiteturais | Leitura do ADR-004, de `catalogo-service/.../cache/`, de `JogoService` e dos testes de cache | Resumo conferido contra o código e os logs |
+| 2 | Montar um roteiro de apresentação | Roteiro com tempos e falas de defesa, sobre a base de cenas da `docs/APRESENTACAO.md` | Texto entregue para revisão |
+| 3 | Rodar a demo completa no PC | Setup em Bazzite com Podman rootless, build das 3 imagens, `compose up`, `00-reset.sh` e demo completa | `exit 0`; 8 cenas; logs dos 3 serviços |
+| 4 | Provar o fallback do cache | `docker compose stop redis`, `GET /jogos/3`, `start redis` | HTTP 200 em ~1 s com `⚠ CACHE INDISPONÍVEL`; recuperação em ~20 s |
+| 5 | Facilitar a gravação em uma tela | `scripts/demo/tmux-demo.sh` (grade 2×3) e `scripts/demo/gravacao.sh` (reset + contagem + cenas) | Layout e script validados na máquina |
+| 6 | Roteiro sincronizado com os eventos | Leitura dos logs reais (correlation id, offsets, `eventId`) e escrita de `docs/ROTEIRO-DEMO-AO-VIVO.md` | Cenas 1 a 7 conferidas contra os logs da execução real |
+| 7 | Entregar o vídeo em formato para Windows | `ffprobe` + `ffmpeg` (VP9 → H.264 High/5.1, `+faststart`) e cópia para o NTFS | MP4 de 2:07, 2560×1080, 3,3 MB, verificado com `ffprobe` |
+
+### O que Gabriel conferiu à mão
+
+- Rodou a demo no próprio PC e gravou a tela (vídeo de 2:07, 2560×1080).
+- Conferiu o vídeo gravado e pediu a conversão para um formato que o Windows abrisse.
+- Decidiu o que entraria neste registro e no PR.
+
+### Erros e correções desta sessão
+
+| # | O que a IA fez primeiro | Quem pegou | Correção |
+|---|---|---|---|
+| 1 | Assumiu o Docker disponível | `docker info` na máquina: daemon desligado e `sudo` com senha | Podman rootless via `DOCKER_HOST`, sem alterar o daemon |
+| 2 | Primeiro `podman build` falhou com `short-name resolution enforced` | Log do build | `~/.config/containers/registries.conf` com `short-name-mode = "permissive"` |
+| 3 | Imagens ficaram como `localhost/lettergames/...`, e o compose esperava `lettergames/...` | `podman images` antes do `compose up` | Tag adicional `docker.io/lettergames/...` |
+| 4 | O vídeo gravado saiu sem áudio (padrão do Spectacle) | `ffprobe` na inspeção do arquivo | Avisado; conversão para MP4 e instruções de merge de narração |
+| 5 | A primeira leitura foi feita no commit `ea2637c`; o `develop` já estava em `17f7e87` | `git log` antes de escrever | Releitura; as mudanças eram só de documentação |
+
+> O vídeo não é versionado: é um artefato local (WebM de 2,1 MB convertido para MP4). O que fica no repositório são os scripts e o roteiro que o produzem.
