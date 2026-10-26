@@ -41,7 +41,11 @@ Evidência do critério 8. O valor deste registro está nos casos em que **a IA 
 - **Cada ADR contra o código** depois das correções. Foi aí que achamos o ADR-003 contradizendo a implementação.
 - Que os testes novos **falham sem a correção** (lock pessimista, empate do outbox), e não só que passam com ela.
 
+## Relato por integrante
+
 > **A fazer por cada integrante antes da banca:** ler o código do seu papel e acrescentar aqui, em primeira pessoa, pelo menos um ponto que conferiu ou de que discordou. A banca vai perguntar a vocês, não à IA.
+
+**João Pedro Guimarães dos Santos Santana (A — Arquiteto + Infra/Demo):** no geral, não tivemos problema com o uso da IA. Antes de pedir qualquer código, eu já tinha o escopo definido: como queria o sistema e como cada parte ia funcionar. Com isso, a IA trabalhou a partir de uma especificação nossa em vez de decidir o desenho sozinha, e a implementação andou rápido. Os erros da tabela acima apareceram no detalhe, não no desenho, e foram pegos pela revisão, pelo CI e pela demo.
 
 ## Reflexão
 
