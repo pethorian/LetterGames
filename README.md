@@ -150,9 +150,9 @@ Propriedades principais:
 
 | Pessoa | Papel |
 |---|---|
-| _(nome)_ | A — Arquiteto + Infra/Demo |
-| _(nome)_ | B — Dev Mensageria |
-| _(nome)_ | C — Dev Dados/Cache + Testes/Contrato |
+| João Pedro Guimarães dos Santos Santana | A — Arquiteto + Infra/Demo |
+| Marcos Emanuel Carvalho dos S D Farias | B — Dev Mensageria |
+| Gabriel Lustosa Queiroz | C — Dev Dados/Cache + Testes/Contrato |
 
 ## Uso de IA
 
