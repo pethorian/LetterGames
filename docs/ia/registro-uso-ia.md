@@ -47,6 +47,10 @@ Evidência do critério 8. O valor deste registro está nos casos em que **a IA 
 
 **João Pedro Guimarães dos Santos Santana (A — Arquiteto + Infra/Demo):** no geral, não tivemos problema com o uso da IA. Antes de pedir qualquer código, eu já tinha o escopo definido: como queria o sistema e como cada parte ia funcionar. Com isso, a IA trabalhou a partir de uma especificação nossa em vez de decidir o desenho sozinha, e a implementação andou rápido. Os erros da tabela acima apareceram no detalhe, não no desenho, e foram pegos pela revisão, pelo CI e pela demo.
 
+**Marcos Emanuel Carvalho dos S D Farias (B — Mensageria):** fui o responsável por definir, com o grupo, o contrato de eventos, a regra de ordem por usuário e a política de retry/DLT. A parte contratual das mensagens, a semântica dos eventos e as regras de retry foram decisões tomadas à mão, discutidas e validadas antes de virar implementação. A IA foi útil para expandir alternativas, testar suposições e acelerar a codificação, mas não decidiu o desenho final.
+
+Em vários momentos, por exemplo, a IA sugeriu caminhos diferentes para o retry: priorizar throughput em vez de ordem, ou permitir que uma partição do Kafka fosse liberada - mesmo quando um evento transitório exigisse espera longa. Como isso acarretaria mais complexidade na regra de negócio (e um risco maior de reordenação de eventos do mesmo usuário), nossa decisão foi manter a ordem estrita por usuário e aceitar o custo conhecido.
+
 **Gabriel Lustosa Queiroz (C — Dados/Cache + Testes/Contrato):** nesta sessão final, fui eu quem deu as ordens e o escopo. A IA executou o setup, a demo e os artefatos; eu conferi rodando a demo no meu PC e gravando a tela. O que eu levo para a banca é o que os logs mostram, não o que o desenho promete: com o Redis fora, o `GET` continua 200 pelo banco; com o catálogo fora, o breaker responde 503 em ~1 ms e o backlog não pendura. Foi isso que me deu confiança para defender o cache como otimização, não como dependência.
 
 ## Reflexão
