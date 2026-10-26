@@ -1,7 +1,7 @@
 # Roteiro da banca — LetterGames (Aula 9 · 26/10 · ~20 min)
 
 > A banca avalia **"por que assim"**, não só "o que faz". Cada fala abaixo tem: o que mostrar, o que dizer e a frase de defesa (o trade-off).
-> **Pessoa A** = Arquiteto + Infra/Demo · **Pessoa B** = Mensageria · **Pessoa C** = Cache/Dados + Testes/Contrato.
+> **Pessoa A** = João Pedro Guimarães dos Santos Santana, Arquiteto + Infra/Demo · **Pessoa B** = Marcos Emanuel Carvalho dos S D Farias, Mensageria · **Pessoa C** = Gabriel Lustosa Queiroz, Cache/Dados + Testes/Contrato.
 
 ---
 
@@ -62,7 +62,7 @@ Aba extra, fora da grade: Kafka UI em `http://localhost:8080`, para mostrar a DL
 
 ## 4. Falas por pessoa
 
-### 🅐 Pessoa A — Arquiteto (abertura, arquitetura, condução da demo, IA)
+### 🅐 Pessoa A (João Pedro Guimarães dos Santos Santana) — Arquiteto (abertura, arquitetura, condução da demo, IA)
 
 **[0:00] Abertura (2 min)**
 > "Todo mundo que joga tem uma pilha de jogos comprados e nunca jogados. O LetterGames é um backlog de jogos: você adiciona jogos do catálogo, marca como jogando, zerado ou abandonado, e o sistema calcula de forma assíncrona quantas horas você tem pela frente e quais conquistas desbloqueou.
@@ -95,7 +95,7 @@ Aba extra, fora da grade: Kafka UI em `http://localhost:8080`, para mostrar a DL
 
 ---
 
-### 🅑 Pessoa B — Mensageria (fluxo assíncrono, idempotência, retry/DLT)
+### 🅑 Pessoa B (Marcos Emanuel Carvalho dos S D Farias) — Mensageria (fluxo assíncrono, idempotência, retry/DLT)
 
 **Narra a parte Kafka da cena 2 e as cenas 5, 5b, 6 e 7** (ver §5).
 
@@ -117,7 +117,7 @@ Aba extra, fora da grade: Kafka UI em `http://localhost:8080`, para mostrar a DL
 
 ---
 
-### 🅒 Pessoa C — Cache, contratos e testes
+### 🅒 Pessoa C (Gabriel Lustosa Queiroz) — Cache, contratos e testes
 
 **Narra as cenas 1, 3 e 4** (ver §5).
 

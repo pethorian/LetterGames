@@ -1,6 +1,6 @@
 # Auto-avaliação — LetterGames (Backlog de Jogos)
 
-Grupo: _(nome A)_ — Arquiteto + Infra/Demo · _(nome B)_ — Dev Mensageria · _(nome C)_ — Dev Dados/Cache + Testes/Contrato
+Grupo: João Pedro Guimarães dos Santos Santana — Arquiteto + Infra/Demo · Marcos Emanuel Carvalho dos S D Farias — Dev Mensageria · Gabriel Lustosa Queiroz — Dev Dados/Cache + Testes/Contrato
 Tema/domínio: backlog de jogos. O jogador organiza jogos do catálogo por status (quero jogar, jogando, zerado, abandonado) e recebe estatísticas e conquistas calculadas de forma assíncrona.
 Perfil de execução: **A** (tudo em Docker) · Fallbacks usados: H2 (modo PostgreSQL), `@EmbeddedKafka`, cache em memória e servidor HTTP falso, **apenas nos testes do perfil B**. O perfil A também roda testes com Postgres e Redis reais (Testcontainers).
 
